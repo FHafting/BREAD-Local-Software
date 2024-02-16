@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="plotly.js"></script>
+</head>
+
+<body onload="loadData()">
+
+    <h1>BREAD Configuration and Controls</h1>
+    <button onclick="sendAllData()">Push All Data to Slices</button>
+    <button id="run" onclick="setRunning()">Start Logging Data</button>
+    <iframe name="target" style="display:none;"></iframe>
+    <hr>
+
+    <div id="pyrolysis">
+        <h1>Pyrolysis Reactor</h1>
+
+        <!-- Gauge area -->
+        <div style="display: flex">
+            <div>
+                <div id="gauge1"></div>
+                <p>Status: ON/OFF (from slice) </p>
+                <form action="/form-submit" method="POST" target="target">
+                    <label for="pyrolysis-heater-1">Setpoint:</label>
+                    <input type="number" name="pyrolysis-heater-1">
+                    <button onclick="">Push Data</button>
+                </form>
+                <p>Kp: </p>
+                <p>Ki: </p>
+                <p>Thermocouple #: </p>
+                <p>Heater #: </p>
+            </div>
+            <div>
+                <div id="gauge2"></div>
+                <p>Status: ON/OFF (from slice) </p>
+                <form action="/form-submit" method="POST" target="target">
+                    <label for="pyrolysis-heater-2">Setpoint:</label>
+                    <input type="number" name="pyrolysis-heater-2">
+                    <button onclick="">Push Data</button>
+                </form>
+                <p>Kp: </p>
+                <p>Ki: </p>
+                <p>Thermocouple #: </p>
+                <p>Heater #: </p>
+            </div>
+            <div>
+                <div id="gauge3"></div>
+                <p>Status: ON/OFF (from slice) </p>
+                <form action="/form-submit" method="POST" target="target">
+                    <label for="pyrolysis-heater-3">Setpoint:</label>
+                    <input type="number" name="pyrolysis-heater-3">
+                    <button onclick="">Push Data</button>
+                </form>
+                <p>Kp: </p>
+                <p>Ki: </p>
+                <p>Thermocouple #: </p>
+                <p>Heater #: </p>
+            </div>
+            <div>
+                <div id="gauge4"></div>
+                <p>Status: ON/OFF (from slice) </p>
+                <form action="/form-submit" method="POST" target="target">
+                    <label for="pyrolysis-heater-4">Setpoint:</label>
+                    <input type="number" name="pyrolysis-heater-4">
+                    <button onclick="">Push Data</button>
+                </form>
+                <p>Kp: </p>
+                <p>Ki: </p>
+                <p>Thermocouple #: </p>
+                <p>Heater #: </p>
+            </div>
+            <div>
+                <div id="gauge5"></div>
+                <p>Status: ON/OFF (from slice) </p>
+                <form action="/form-submit" method="POST" target="target">
+                    <label for="pyrolysis-heater-5">Setpoint:</label>
+                    <input type="number" name="pyrolysis-heater-5">
+                    <button onclick="">Push Data</button>
+                </form>
+                <p>Kp: </p>
+                <p>Ki: </p>
+                <p>Thermocouple #: </p>
+                <p>Heater #: </p>
+            </div>
+            <div>
+                <div id="gauge6"></div>
+                <p>Status: ON/OFF (from slice) </p>
+                <form action="/form-submit" method="POST" target="target">
+                    <label for="pyrolysis-heater-6">Setpoint:</label>
+                    <input type="number" name="pyrolysis-heater-6">
+                    <button onclick="">Push Data</button>
+                </form>
+                <p>Kp: </p>
+                <p>Ki: </p>
+                <p>Thermocouple #: </p>
+                <p>Heater #: </p>
+            </div>
+        </div>
+
+        <!-- Graph area -->
+        <div id='graph1'></div>
+        <label for="tracking-amount">Number of previous seconds to track: </label>
+        <input type="number" id="tracking-amount" name="tracking-amount">
+        <button id="tracking" onclick="setTracking()">Track Data</button>
+
+        <br><br><br><br>
+    </div>
+
+<script>
+        
+var pyrolysis_traces = [
+    {
+        y: [],
+        x: [],
+        type: 'scatter',
+        mode: "lines",
+        name: "Dissolution Tank"
+    },
+    {
+        y: [],
+        x: [],
+        type: 'scatter',
+        mode: "lines",
+        name: "Valve"
+    },
+    {
+        y: [],
+        x: [],
+        type: 'scatter',
+        mode: "lines",
+        name: "Char Chamber"
+    },
+    {
+        y: [],
+        x: [],
+        type: 'scatter',
+        mode: "lines",
+        name: "Pyrolysis Reactor"
+    },
+    {
+        y: [],
+        x: [],
+        type: 'scatter',
+        mode: "lines",
+        name: "Condenser 1"
+    },
+    {
+        y: [],
+        x: [],
+        type: 'scatter',
+        mode: "lines",
+        name: "Condenser 2"
+    },
+]
+
+var layout = {
+    title: 'Temperature Data',
+    xaxis: {
+        title: 'Time',
+        autorange: true,
+        rangeselector: {buttons: [
+            {
+            count: 1,
+            label: '1h',
+            step: 'hour',
+            stepmode: 'backward'
+            },
+            {
+            count: 6,
+            label: '6h',
+            step: 'hour',
+            stepmode: 'backward'
+            },
+            {
+            count: 12,
+            label: '12h',
+            step: 'hour',
+            stepmode: 'backward'
+            },
+            {
+            count: 24,
+            label: '24h',
+            step: 'hour',
+            stepmode: 'backward'
+            },
+            {step: 'all'}
+        ]},
+        type: 'date'
+    },
+    yaxis: {
+        title: 'Degrees Celsius'
+    },
+    showlegend: true
+};
+
+function loadData() {
+    //reset data
+    for(let n = 0; n < pyrolysis_traces.length; n++) {
+        pyrolysis_traces[n].y = []
+        pyrolysis_traces[n].x = []
+    }
+    
+    //Get Data	
+    fetch('data.csv')
+    .then(response => response.text())
+    .then(text => {
+        let row = text.split("\r\n") //split entries by row
+
+        for(let n = 1; n < row.length; n++) {
+            let data = row[n].split(',')
+            for(let x = 0; x < pyrolysis_traces.length; x++) {
+                pyrolysis_traces[x].x.push(data[0])     //data[0] pushes time to the x axis
+                pyrolysis_traces[x].y.push(data[x+1])   //data[x+1] to avoid pushing the date and time
+            }
+        }
+
+        //Plot data
+        Plotly.newPlot('graph1', pyrolysis_traces, layout, {scrollZoom: true});                    
+    })
+
+    //send time to ESP32
+    var now = new Date();
+    var rtcTime = now.toLocaleTimeString('en-US', {hour12: false}).split(":")
+    rtcTime[2] = parseInt(rtcTime[2])
+    var rtcDate = now.toLocaleDateString().split("/")
+    fetch(window.location.href + "get-variables", {
+        method: "POST",
+        headers: {
+        'Content-Type': 'text/plain',
+        },
+        body: rtcTime[2]+","+rtcTime[1]+","+rtcTime[0]+","+rtcDate[1]+","+rtcDate[0]+","+rtcDate[2],
+    })
+    .then(response => response.text()) // Get the response as text
+    .then(textData => {
+        if(textData == "logging") {
+            logging = true;
+            document.getElementById("run").textContent = "Logging Data..."
+        } else if(textData == "not logging") {
+            logging = false;
+            document.getElementById("run").textContent = "Start Logging Data"
+        }
+    })
+}
+
+var gaugeData = [{
+    domain: { x: [0, 1], y: [0, 1] },
+    value: 0,
+    title: { text: "Speed" },
+    type: "indicator",
+    mode: "gauge+number",
+    delta: { reference: 200 },
+    gauge: {
+        axis: { range: [null, 400] },
+        bar: { color: "blue" },
+        steps: [
+            { range: [0, 400], color: "#dddddd" },
+            { range: [95, 105], color: "yellow" },
+            { range: [195, 205], color: "green" },
+            { range: [295, 305], color: "red" }
+        ],
+    }
+}];
+var gaugeLayout = { width: 270, height: 220, margin: { t: 0, b: 0, l: 40, r: 40} };
+
+//create new gauge plots
+Plotly.newPlot('gauge1', gaugeData, gaugeLayout);
+Plotly.newPlot('gauge2', gaugeData, gaugeLayout);
+Plotly.newPlot('gauge3', gaugeData, gaugeLayout);
+Plotly.newPlot('gauge4', gaugeData, gaugeLayout);
+Plotly.newPlot('gauge5', gaugeData, gaugeLayout);
+Plotly.newPlot('gauge6', gaugeData, gaugeLayout);
+
+//adjust titles
+Plotly.restyle('gauge1', {title: "Dissolution Tank"})
+Plotly.restyle('gauge2', {title: "Valve"})
+Plotly.restyle('gauge3', {title: "Char Chamber"})
+Plotly.restyle('gauge4', {title: "Pyrolysis Reactor"})
+Plotly.restyle('gauge5', {title: "Condenser 1"})
+Plotly.restyle('gauge6', {title: "Condenser 2"})
+
+
+//--------------------------------------------------------------------------//
+
+if (!!window.EventSource) {
+    var source = new EventSource('/events');
+
+    source.addEventListener('open', function(e) {
+        console.log("Events Connected");
+    }, false);
+
+    source.addEventListener('error', function(e) {
+        if (e.target.readyState != EventSource.OPEN) {
+            console.log("Events Disconnected");
+        }
+    }, false);
+
+    source.addEventListener('thermocouple-readings', function(e) {
+        var dataVals = e.data.split(',')
+        //console.log(dataVals)
+
+        function pickColor(val) {
+            if      (val < 100){return "yellow"}
+            else if (val > 300){return "red"}
+            else               {return "green"}
+        }
+        
+        var gaugeInfo = [
+            {id: "gauge1", value: dataVals[1], title: "Dissolution Tank"},
+            {id: "gauge2", value: dataVals[2], title: "Valve"},
+            {id: "gauge3", value: dataVals[3], title: "Char Chamber"},
+            {id: "gauge4", value: dataVals[4], title: "Pyrolysis Reactor"},
+            {id: "gauge5", value: dataVals[5], title: "Condenser 1"},
+            {id: "gauge6", value: dataVals[6], title: "Condenser 2"},
+        ]
+        
+        //push values to gauges (need to change titles too for some reason to keep them there lol)
+        for(let n = 0; n < gaugeInfo.length; n++) {
+            Plotly.restyle(gaugeInfo[n].id, {value: gaugeInfo[n].value, title: gaugeInfo[n].title, 'gauge.bar.color': pickColor(gaugeInfo[n].value)})
+        }
+        
+        //plot values
+        if(logging) {
+            //could use a for loop but I only want to call extendTraces once
+            Plotly.extendTraces('graph1', {
+                x: [[dataVals[0]],[dataVals[0]],[dataVals[0]],[dataVals[0]],[dataVals[0]],[dataVals[0]]],
+                y: [[dataVals[1]],[dataVals[2]],[dataVals[3]],[dataVals[4]],[dataVals[5]],[dataVals[6]]]
+            }, [0, 1, 2, 3, 4, 5])
+
+            //Plotly.relayout("graph1", {rangeselector: {range: [pyrolysis_traces[0].x[0], pyrolysis_traces[0].x[pyrolysis_traces[0].x.length-1]]}})
+
+            if(tracking) {
+                trackData(document.getElementById('tracking-amount').value)
+            }
+        }
+  }, false);
+}
+
+function sendAllData() {
+    // URL to send the POST request to
+    var url = window.location.href;
+
+    var slices = document.querySelectorAll(".slice");
+    var allData = []
+    // Data to be sent in the POST request
+    for(let x = 0; x < slices.length; x++) {
+        var inputs = slices[x].querySelectorAll("input")
+        for(let n = 0; n < inputs.length; n++) {
+            allData.push(inputs[n].value)
+        }
+    }
+
+    sendPOST(allData, "all-data")
+}
+
+var logging = false;
+function setRunning() {
+    logging = !logging
+    if(logging) {
+        document.getElementById("run").textContent = "Logging Data..."
+        sendPOST("logging", "logging")
+    } else {
+        document.getElementById("run").textContent = "Start Logging Data"
+        sendPOST("not logging", "not-logging")
+    }
+}
+
+function sendPOST(data, action) {
+    var url = window.location.href + action;
+    fetch(url, {
+        method: "POST",
+        headers: {
+        'Content-Type': 'text/plain',
+        },
+        body: String(data),
+    })
+    .then(response => response.text()) // Get the response as text
+    .then(textData => {
+        // Handle the data from the response
+        //console.log('Response Data:', textData);
+    })
+}
+
+var tracking = false;
+function setTracking() {
+    tracking = !tracking
+    if(tracking) {
+        document.getElementById('tracking').textContent = 'Tracking Data...'
+        trackData(document.getElementById('tracking-amount').value)
+    } else {
+        document.getElementById('tracking').textContent = 'Track Data'
+    }
+}
+function trackData(amount) {
+    let lastIndex = pyrolysis_traces[0].x.length-1
+    let currentDate = new Date(pyrolysis_traces[0].x[lastIndex])
+    //console.log(Math.abs(pyrolysis_traces[0].x[firstIndex], pyrolysis_traces[0].x[lastIndex]))
+    //console.log(pyrolysis_traces[0].x[lastIndex], Math.abs(pyrolysis_traces[0].x[lastIndex] - 30))
+    Plotly.relayout("graph1", {"xaxis.range": [currentDate - amount*1000, currentDate]})
+}
+</script>
+
+</body>
+</html>
