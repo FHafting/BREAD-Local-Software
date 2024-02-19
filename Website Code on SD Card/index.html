@@ -18,7 +18,7 @@
         <!-- Gauge area -->
         <div style="display: flex">
             <div>
-                <div id="gauge1"></div>
+                <div id="pyrolysis-thermo-gauge1"></div>
                 <p>Status: ON/OFF (from slice) </p>
                 <form action="/form-submit" method="POST" target="target">
                     <label for="pyrolysis-heater-1">Setpoint:</label>
@@ -31,7 +31,7 @@
                 <p>Heater #: </p>
             </div>
             <div>
-                <div id="gauge2"></div>
+                <div id="pyrolysis-thermo-gauge2"></div>
                 <p>Status: ON/OFF (from slice) </p>
                 <form action="/form-submit" method="POST" target="target">
                     <label for="pyrolysis-heater-2">Setpoint:</label>
@@ -44,7 +44,7 @@
                 <p>Heater #: </p>
             </div>
             <div>
-                <div id="gauge3"></div>
+                <div id="pyrolysis-thermo-gauge3"></div>
                 <p>Status: ON/OFF (from slice) </p>
                 <form action="/form-submit" method="POST" target="target">
                     <label for="pyrolysis-heater-3">Setpoint:</label>
@@ -57,7 +57,7 @@
                 <p>Heater #: </p>
             </div>
             <div>
-                <div id="gauge4"></div>
+                <div id="pyrolysis-thermo-gauge4"></div>
                 <p>Status: ON/OFF (from slice) </p>
                 <form action="/form-submit" method="POST" target="target">
                     <label for="pyrolysis-heater-4">Setpoint:</label>
@@ -70,7 +70,7 @@
                 <p>Heater #: </p>
             </div>
             <div>
-                <div id="gauge5"></div>
+                <div id="pyrolysis-thermo-gauge5"></div>
                 <p>Status: ON/OFF (from slice) </p>
                 <form action="/form-submit" method="POST" target="target">
                     <label for="pyrolysis-heater-5">Setpoint:</label>
@@ -83,7 +83,7 @@
                 <p>Heater #: </p>
             </div>
             <div>
-                <div id="gauge6"></div>
+                <div id="pyrolysis-thermo-gauge6"></div>
                 <p>Status: ON/OFF (from slice) </p>
                 <form action="/form-submit" method="POST" target="target">
                     <label for="pyrolysis-heater-6">Setpoint:</label>
@@ -98,7 +98,7 @@
         </div>
 
         <!-- Graph area -->
-        <div id='graph1'></div>
+        <div id='pyrolysis-thermo-graph'></div>
         <label for="tracking-amount">Number of previous seconds to track: </label>
         <input type="number" id="tracking-amount" name="tracking-amount">
         <button id="tracking" onclick="setTracking()">Track Data</button>
@@ -106,8 +106,46 @@
         <br><br><br><br>
     </div>
 
+    <div id="bioreactor">
+        <h1>Bioreactor</h1>
+        <div id="bio-thermocouples" style="display: flex">
+            <div id="bio-thermo-gauge1"></div>
+            <div id="bio-thermo-gauge2"></div>
+            <div id="bio-thermo-graph" style="height: 350px; width: 1100px;"></div>
+        </div>
+       
+        <div id="bio-ph" style="display: flex">
+            <div id="bio-ph-gauge1"></div>
+            <div id="bio-ph-gauge2"></div>
+            <div id="bio-ph-graph" style="height: 350px; width: 1100px;"></div>
+        </div>
+        <div id="bio-oxygen" style="display: flex">
+            <div id="bio-oxygen-gauge1"></div>
+            <div id="bio-oxygen-gauge2"></div>
+            <div id="bio-oxygen-graph" style="height: 350px; width: 1100px;"></div>
+        </div>
+        <div id="bio-motors-1" style="display: flex">
+            <div id="bio-stirring-gauge1"></div>
+            <div id="bio-pump1-gauge1"></div>
+            <div id="bio-pump2-gauge1"></div>
+            <div id="bio-pump3-gauge1"></div>
+            <div id="bio-pump4-gauge1"></div>
+            <div id="bio-pump5-gauge1"></div>
+        </div>
+        <div id="bio-motors-2" style="display: flex">
+            <div id="bio-stirring-gauge2"></div>
+            <div id="bio-pump1-gauge2"></div>
+            <div id="bio-pump2-gauge2"></div>
+            <div id="bio-pump3-gauge2"></div>
+            <div id="bio-pump4-gauge2"></div>
+            <div id="bio-pump5-gauge2"></div>
+        </div>
+
+    </div>
+
 <script>
-        
+
+//----------------Pyrolysis thermocouple traces-----------------------//  
 var pyrolysis_traces = [
     {
         y: [],
@@ -153,7 +191,62 @@ var pyrolysis_traces = [
     },
 ]
 
-var layout = {
+//----------------Bioreactor thermocouple traces-----------------------//
+var bio_thermo_traces = [
+    {
+        y: [],
+        x: [],
+        type: 'scatter',
+        mode: "lines",
+        name: "Thermocouple 1"
+    },
+    {
+        y: [],
+        x: [],
+        type: 'scatter',
+        mode: "lines",
+        name: "Thermocouple 2"
+    }
+]
+
+//----------------Bioreactor pH traces-----------------------//
+var bio_ph_traces = [
+    {
+        y: [],
+        x: [],
+        type: 'scatter',
+        mode: "lines",
+        name: "pH Sensor 1"
+    },
+    {
+        y: [],
+        x: [],
+        type: 'scatter',
+        mode: "lines",
+        name: "pH Sensor 2"
+    }
+]
+
+//----------------Bioreactor dissolved oxygen traces-----------------------//
+var bio_oxygen_traces = [
+    {
+        y: [],
+        x: [],
+        type: 'scatter',
+        mode: "lines",
+        name: "Dissolved Oxygen Sensor 1"
+    },
+    {
+        y: [],
+        x: [],
+        type: 'scatter',
+        mode: "lines",
+        name: "Dissolved Oxygen Sensor 2"
+    }
+]
+
+//----------------Thermocouple graph layout-----------------------//
+var thermocouple_layout = {
     title: 'Temperature Data',
     xaxis: {
         title: 'Time',
@@ -193,13 +286,90 @@ var layout = {
     showlegend: true
 };
 
+//----------------pH graph layout-----------------------//
+var pH_layout = {
+    title: 'pH Data',
+    xaxis: {
+        title: 'Time',
+        autorange: true,
+        rangeselector: {buttons: [
+            {
+            count: 1,
+            label: '1h',
+            step: 'hour',
+            stepmode: 'backward'
+            },
+            {
+            count: 6,
+            label: '6h',
+            step: 'hour',
+            stepmode: 'backward'
+            },
+            {
+            count: 12,
+            label: '12h',
+            step: 'hour',
+            stepmode: 'backward'
+            },
+            {
+            count: 24,
+            label: '24h',
+            step: 'hour',
+            stepmode: 'backward'
+            },
+            {step: 'all'}
+        ]},
+        type: 'date'
+    },
+    yaxis: {
+        title: 'pH'
+    },
+    showlegend: true
+};
+
+//----------------Dissolved oxygen graph layout-----------------------//
+var oxygen_layout = {
+    title: 'Dissolved Oxygen Data',
+    xaxis: {
+        title: 'Time',
+        autorange: true,
+        rangeselector: {buttons: [
+            {
+            count: 1,
+            label: '1h',
+            step: 'hour',
+            stepmode: 'backward'
+            },
+            {
+            count: 6,
+            label: '6h',
+            step: 'hour',
+            stepmode: 'backward'
+            },
+            {
+            count: 12,
+            label: '12h',
+            step: 'hour',
+            stepmode: 'backward'
+            },
+            {
+            count: 24,
+            label: '24h',
+            step: 'hour',
+            stepmode: 'backward'
+            },
+            {step: 'all'}
+        ]},
+        type: 'date'
+    },
+    yaxis: {
+        title: 'Dissolved Oxygen (mL)'
+    },
+    showlegend: true
+};
+
+
 function loadData() {
-    //reset data
-    for(let n = 0; n < pyrolysis_traces.length; n++) {
-        pyrolysis_traces[n].y = []
-        pyrolysis_traces[n].x = []
-    }
-    
     //Get Data	
     fetch('data.csv')
     .then(response => response.text())
@@ -215,8 +385,17 @@ function loadData() {
         }
 
         //Plot data
-        Plotly.newPlot('graph1', pyrolysis_traces, layout, {scrollZoom: true});                    
+        Plotly.newPlot('pyrolysis-thermo-graph', pyrolysis_traces, thermocouple_layout, {scrollZoom: true});
+        Plotly.newPlot('bio-thermo-graph', bio_thermo_traces, thermocouple_layout, {scrollZoom: true});                    
+        Plotly.newPlot('bio-ph-graph', bio_ph_traces, pH_layout, {scrollZoom: true});
+        Plotly.newPlot('bio-oxygen-graph', bio_oxygen_traces, oxygen_layout, {scrollZoom: true});                                       
     })
+
+    //load bioreactor data
+
+
+    //load chemreactor data
+
 
     //send time to ESP32
     var now = new Date();
@@ -242,10 +421,14 @@ function loadData() {
     })
 }
 
-var gaugeData = [{
+//----------------Standard Gauge Layout-----------------------//
+var gaugeLayout = { width: 270, height: 220, margin: { t: 0, b: 0, l: 40, r: 40} };
+
+//----------------Thermocouple Gauge-----------------------//
+var thermo_gauge = [{
     domain: { x: [0, 1], y: [0, 1] },
     value: 0,
-    title: { text: "Speed" },
+    title: { text: "" },
     type: "indicator",
     mode: "gauge+number",
     delta: { reference: 200 },
@@ -260,24 +443,124 @@ var gaugeData = [{
         ],
     }
 }];
-var gaugeLayout = { width: 270, height: 220, margin: { t: 0, b: 0, l: 40, r: 40} };
 
+//----------------pH Gauge-----------------------//
+var pH_gauge = [{
+    domain: { x: [0, 1], y: [0, 1] },
+    value: 0,
+    title: { text: "" },
+    type: "indicator",
+    mode: "gauge+number",
+    delta: { reference: 7 },
+    gauge: {
+        axis: { range: [null, 14] },
+        bar: { color: "green" },
+        steps: [
+            { range: [0, 14], color: "#dddddd" },
+        ],
+        threshold: {
+            line: { color: "red", width: 4 },
+            thickness: 0.75,
+            value: 7
+        }
+    }
+}];
+
+//----------------Dissolved Oxygen Gauge-----------------------//
+var oxygen_gauge = [{
+    domain: { x: [0, 1], y: [0, 1] },
+    value: 0,
+    title: { text: "" },
+    type: "indicator",
+    mode: "gauge+number",
+    delta: { reference: 50 },
+    gauge: {
+        axis: { range: [null, 100] },
+        bar: { color: "green" },
+        steps: [
+            { range: [0, 100], color: "#dddddd" },
+        ],
+    }
+}];
+
+//----------------Motor Gauge-----------------------//
+var motor_gauge = [{
+    domain: { x: [0, 1], y: [0, 1] },
+    value: 0,
+    title: { text: "" },
+    type: "indicator",
+    mode: "gauge+number",
+    delta: { reference: 50 },
+    gauge: {
+        axis: { range: [null, 100] },
+        bar: { color: "green" },
+        steps: [
+            { range: [0, 100], color: "#dddddd" },
+        ],
+    }
+}];
+
+//----------------Pyrolysis Gauges-----------------------//
 //create new gauge plots
-Plotly.newPlot('gauge1', gaugeData, gaugeLayout);
-Plotly.newPlot('gauge2', gaugeData, gaugeLayout);
-Plotly.newPlot('gauge3', gaugeData, gaugeLayout);
-Plotly.newPlot('gauge4', gaugeData, gaugeLayout);
-Plotly.newPlot('gauge5', gaugeData, gaugeLayout);
-Plotly.newPlot('gauge6', gaugeData, gaugeLayout);
+Plotly.newPlot('pyrolysis-thermo-gauge1', thermo_gauge, gaugeLayout);
+Plotly.newPlot('pyrolysis-thermo-gauge2', thermo_gauge, gaugeLayout);
+Plotly.newPlot('pyrolysis-thermo-gauge3', thermo_gauge, gaugeLayout);
+Plotly.newPlot('pyrolysis-thermo-gauge4', thermo_gauge, gaugeLayout);
+Plotly.newPlot('pyrolysis-thermo-gauge5', thermo_gauge, gaugeLayout);
+Plotly.newPlot('pyrolysis-thermo-gauge6', thermo_gauge, gaugeLayout);
 
 //adjust titles
-Plotly.restyle('gauge1', {title: "Dissolution Tank"})
-Plotly.restyle('gauge2', {title: "Valve"})
-Plotly.restyle('gauge3', {title: "Char Chamber"})
-Plotly.restyle('gauge4', {title: "Pyrolysis Reactor"})
-Plotly.restyle('gauge5', {title: "Condenser 1"})
-Plotly.restyle('gauge6', {title: "Condenser 2"})
+Plotly.restyle('pyrolysis-thermo-gauge1', {title: "Dissolution Tank"})
+Plotly.restyle('pyrolysis-thermo-gauge2', {title: "Valve"})
+Plotly.restyle('pyrolysis-thermo-gauge3', {title: "Char Chamber"})
+Plotly.restyle('pyrolysis-thermo-gauge4', {title: "Pyrolysis Reactor"})
+Plotly.restyle('pyrolysis-thermo-gauge5', {title: "Condenser 1"})
+Plotly.restyle('pyrolysis-thermo-gauge6', {title: "Condenser 2"})
 
+//----------------Bioreactor Gauges-----------------------//
+//create new gauge plots
+Plotly.newPlot('bio-thermo-gauge1', thermo_gauge, gaugeLayout);
+Plotly.newPlot('bio-thermo-gauge2', thermo_gauge, gaugeLayout);
+
+Plotly.newPlot('bio-ph-gauge1', pH_gauge, gaugeLayout);
+Plotly.newPlot('bio-ph-gauge2', pH_gauge, gaugeLayout);
+
+Plotly.newPlot('bio-oxygen-gauge1', oxygen_gauge, gaugeLayout);
+Plotly.newPlot('bio-oxygen-gauge2', oxygen_gauge, gaugeLayout);
+
+Plotly.newPlot("bio-stirring-gauge1", motor_gauge, gaugeLayout);
+Plotly.newPlot("bio-stirring-gauge2", motor_gauge, gaugeLayout);
+
+Plotly.newPlot("bio-pump1-gauge1", motor_gauge, gaugeLayout);
+Plotly.newPlot("bio-pump2-gauge1", motor_gauge, gaugeLayout);
+Plotly.newPlot("bio-pump3-gauge1", motor_gauge, gaugeLayout);
+Plotly.newPlot("bio-pump4-gauge1", motor_gauge, gaugeLayout);
+Plotly.newPlot("bio-pump5-gauge1", motor_gauge, gaugeLayout);
+Plotly.newPlot("bio-pump1-gauge2", motor_gauge, gaugeLayout);
+Plotly.newPlot("bio-pump2-gauge2", motor_gauge, gaugeLayout);
+Plotly.newPlot("bio-pump3-gauge2", motor_gauge, gaugeLayout);
+Plotly.newPlot("bio-pump4-gauge2", motor_gauge, gaugeLayout);
+Plotly.newPlot("bio-pump5-gauge2", motor_gauge, gaugeLayout);
+
+//restyle
+Plotly.restyle('bio-thermo-gauge1', {title: "Thermocouple 1"})
+Plotly.restyle('bio-thermo-gauge2', {title: "Thermocouple 2"})
+Plotly.restyle('bio-ph-gauge1', {title: "pH Sensor 1"})
+Plotly.restyle('bio-ph-gauge2', {title: "pH Sensor 2"})
+Plotly.restyle('bio-oxygen-gauge1', {title: "Dissolved Oxygen 1"})
+Plotly.restyle('bio-oxygen-gauge2', {title: "Dissolved Oxygen 2"})
+Plotly.restyle('bio-stirring-gauge1', {title: "Stirring Motor 1"})
+Plotly.restyle('bio-stirring-gauge2', {title: "Stirring Motor 2"})
+Plotly.restyle('bio-pump1-gauge1', {title: "Pump 1-1"})
+Plotly.restyle('bio-pump2-gauge1', {title: "Pump 1-2"})
+Plotly.restyle('bio-pump3-gauge1', {title: "Pump 1-3"})
+Plotly.restyle('bio-pump4-gauge1', {title: "Pump 1-4"})
+Plotly.restyle('bio-pump5-gauge1', {title: "Pump 1-5"})
+Plotly.restyle('bio-pump1-gauge2', {title: "Pump 2-1"})
+Plotly.restyle('bio-pump2-gauge2', {title: "Pump 2-2"})
+Plotly.restyle('bio-pump3-gauge2', {title: "Pump 2-3"})
+Plotly.restyle('bio-pump4-gauge2', {title: "Pump 2-4"})
+Plotly.restyle('bio-pump5-gauge2', {title: "Pump 2-5"})
 
 //--------------------------------------------------------------------------//
 
@@ -296,7 +579,6 @@ if (!!window.EventSource) {
 
     source.addEventListener('thermocouple-readings', function(e) {
         var dataVals = e.data.split(',')
-        //console.log(dataVals)
 
         function pickColor(val) {
             if      (val < 100){return "yellow"}
@@ -305,12 +587,12 @@ if (!!window.EventSource) {
         }
         
         var gaugeInfo = [
-            {id: "gauge1", value: dataVals[1], title: "Dissolution Tank"},
-            {id: "gauge2", value: dataVals[2], title: "Valve"},
-            {id: "gauge3", value: dataVals[3], title: "Char Chamber"},
-            {id: "gauge4", value: dataVals[4], title: "Pyrolysis Reactor"},
-            {id: "gauge5", value: dataVals[5], title: "Condenser 1"},
-            {id: "gauge6", value: dataVals[6], title: "Condenser 2"},
+            {id: "pyrolysis-thermo-gauge1", value: dataVals[1], title: "Dissolution Tank"},
+            {id: "pyrolysis-thermo-gauge2", value: dataVals[2], title: "Valve"},
+            {id: "pyrolysis-thermo-gauge3", value: dataVals[3], title: "Char Chamber"},
+            {id: "pyrolysis-thermo-gauge4", value: dataVals[4], title: "Pyrolysis Reactor"},
+            {id: "pyrolysis-thermo-gauge5", value: dataVals[5], title: "Condenser 1"},
+            {id: "pyrolysis-thermo-gauge6", value: dataVals[6], title: "Condenser 2"},
         ]
         
         //push values to gauges (need to change titles too for some reason to keep them there lol)
@@ -321,7 +603,7 @@ if (!!window.EventSource) {
         //plot values
         if(logging) {
             //could use a for loop but I only want to call extendTraces once
-            Plotly.extendTraces('graph1', {
+            Plotly.extendTraces('pyrolysis-thermo-graph', {
                 x: [[dataVals[0]],[dataVals[0]],[dataVals[0]],[dataVals[0]],[dataVals[0]],[dataVals[0]]],
                 y: [[dataVals[1]],[dataVals[2]],[dataVals[3]],[dataVals[4]],[dataVals[5]],[dataVals[6]]]
             }, [0, 1, 2, 3, 4, 5])
@@ -393,9 +675,7 @@ function setTracking() {
 function trackData(amount) {
     let lastIndex = pyrolysis_traces[0].x.length-1
     let currentDate = new Date(pyrolysis_traces[0].x[lastIndex])
-    //console.log(Math.abs(pyrolysis_traces[0].x[firstIndex], pyrolysis_traces[0].x[lastIndex]))
-    //console.log(pyrolysis_traces[0].x[lastIndex], Math.abs(pyrolysis_traces[0].x[lastIndex] - 30))
-    Plotly.relayout("graph1", {"xaxis.range": [currentDate - amount*1000, currentDate]})
+    Plotly.relayout("pyrolysis-thermo-graph", {"xaxis.range": [currentDate - amount*1000, currentDate]})
 }
 </script>
 
