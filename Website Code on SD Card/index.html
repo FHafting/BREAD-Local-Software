@@ -7,7 +7,6 @@
 <body onload="loadData()">
 
     <h1>BREAD Configuration and Controls</h1>
-    <button onclick="sendAllData()">Push All Data to Slices</button>
     <button id="run" onclick="setRunning()">Start Logging Data</button>
     <iframe name="target" style="display:none;"></iframe>
     <hr>
@@ -21,8 +20,8 @@
                 <div id="pyrolysis-thermo-gauge1"></div>
                 <p>Status: ON/OFF (from slice) </p>
                 <form action="/form-submit" method="POST" target="target">
-                    <label for="pyrolysis-heater-1">Setpoint:</label>
-                    <input type="number" name="pyrolysis-heater-1">
+                    <label>Setpoint:</label>
+                    <input type="number" name="p1" id="pyrolysis-thermo-gauge1-amount">
                     <button onclick="">Push Data</button>
                 </form>
                 <p>Kp: </p>
@@ -34,8 +33,8 @@
                 <div id="pyrolysis-thermo-gauge2"></div>
                 <p>Status: ON/OFF (from slice) </p>
                 <form action="/form-submit" method="POST" target="target">
-                    <label for="pyrolysis-heater-2">Setpoint:</label>
-                    <input type="number" name="pyrolysis-heater-2">
+                    <label>Setpoint:</label>
+                    <input type="number" name="p2" id="pyrolysis-thermo-gauge2-amount">
                     <button onclick="">Push Data</button>
                 </form>
                 <p>Kp: </p>
@@ -47,8 +46,8 @@
                 <div id="pyrolysis-thermo-gauge3"></div>
                 <p>Status: ON/OFF (from slice) </p>
                 <form action="/form-submit" method="POST" target="target">
-                    <label for="pyrolysis-heater-3">Setpoint:</label>
-                    <input type="number" name="pyrolysis-heater-3">
+                    <label>Setpoint:</label>
+                    <input type="number" name="p3" id="pyrolysis-thermo-gauge3-amount">
                     <button onclick="">Push Data</button>
                 </form>
                 <p>Kp: </p>
@@ -60,8 +59,8 @@
                 <div id="pyrolysis-thermo-gauge4"></div>
                 <p>Status: ON/OFF (from slice) </p>
                 <form action="/form-submit" method="POST" target="target">
-                    <label for="pyrolysis-heater-4">Setpoint:</label>
-                    <input type="number" name="pyrolysis-heater-4">
+                    <label>Setpoint:</label>
+                    <input type="number" name="p4" id="pyrolysis-thermo-gauge4-amount">
                     <button onclick="">Push Data</button>
                 </form>
                 <p>Kp: </p>
@@ -73,8 +72,8 @@
                 <div id="pyrolysis-thermo-gauge5"></div>
                 <p>Status: ON/OFF (from slice) </p>
                 <form action="/form-submit" method="POST" target="target">
-                    <label for="pyrolysis-heater-5">Setpoint:</label>
-                    <input type="number" name="pyrolysis-heater-5">
+                    <label>Setpoint:</label>
+                    <input type="number" name="p5" id="pyrolysis-thermo-gauge5-amount">
                     <button onclick="">Push Data</button>
                 </form>
                 <p>Kp: </p>
@@ -86,8 +85,8 @@
                 <div id="pyrolysis-thermo-gauge6"></div>
                 <p>Status: ON/OFF (from slice) </p>
                 <form action="/form-submit" method="POST" target="target">
-                    <label for="pyrolysis-heater-6">Setpoint:</label>
-                    <input type="number" name="pyrolysis-heater-6">
+                    <label>Setpoint:</label>
+                    <input type="number" name="p6" id="pyrolysis-thermo-gauge6-amount">
                     <button onclick="">Push Data</button>
                 </form>
                 <p>Kp: </p>
@@ -100,8 +99,8 @@
         <!-- Graph area -->
         <div id='pyrolysis-thermo-graph'></div>
         <label for="tracking-amount">Number of previous seconds to track: </label>
-        <input type="number" id="tracking-amount" name="tracking-amount">
-        <button id="tracking" onclick="setTracking()">Track Data</button>
+        <input type="number" id="pyrolysis-tracking-amount" name="tracking-amount">
+        <button id="pyrolysis-tracking" onclick="setTracking('pyrolysis-tracking', 'pyrolysis-tracking-amount', 'pyrolysis-thermo-graph')">Track Data</button>
 
         <br><br><br><br>
     </div>
@@ -111,36 +110,129 @@
         <div id="bio-thermocouples" style="display: flex">
             <div id="bio-thermo-gauge1"></div>
             <div id="bio-thermo-gauge2"></div>
-            <div id="bio-thermo-graph" style="height: 350px; width: 1100px;"></div>
+            <div>
+                <div id="bio-thermo-graph" style="height: 350px; width: 1100px;"></div>
+                <label>Number of previous seconds to track: </label>
+                <input type="number" id="bio-thermo-tracking-amount">
+                <button id="bio-thermo-tracking" onclick="setTracking('bio-thermo-tracking', 'bio-thermo-tracking-amount', 'bio-thermo-graph')">Track Data</button>        
+            </div>
         </div>
        
         <div id="bio-ph" style="display: flex">
             <div id="bio-ph-gauge1"></div>
             <div id="bio-ph-gauge2"></div>
-            <div id="bio-ph-graph" style="height: 350px; width: 1100px;"></div>
+            <div>
+                <div id="bio-ph-graph" style="height: 350px; width: 1100px;"></div>
+                <label>Number of previous seconds to track: </label>
+                <input type="number" id="bio-ph-tracking-amount">
+                <button id="bio-ph-tracking" onclick="setTracking('bio-ph-tracking', 'bio-ph-tracking-amount', 'bio-ph-graph')">Track Data</button>        
+            </div>
         </div>
         <div id="bio-oxygen" style="display: flex">
             <div id="bio-oxygen-gauge1"></div>
             <div id="bio-oxygen-gauge2"></div>
-            <div id="bio-oxygen-graph" style="height: 350px; width: 1100px;"></div>
+            <div>
+                <div id="bio-oxygen-graph" style="height: 350px; width: 1100px;"></div>
+                <label>Number of previous seconds to track: </label>
+                <input type="number" id="bio-oxygen-tracking-amount">
+                <button id="bio-oxygen-tracking" onclick="setTracking('bio-oxygen-tracking', 'bio-oxygen-tracking-amount', 'bio-oxygen-graph')">Track Data</button>        
+            </div>
         </div>
         <div id="bio-motors-1" style="display: flex">
-            <div id="bio-stirring-gauge1"></div>
-            <div id="bio-pump1-gauge1"></div>
-            <div id="bio-pump2-gauge1"></div>
-            <div id="bio-pump3-gauge1"></div>
-            <div id="bio-pump4-gauge1"></div>
-            <div id="bio-pump5-gauge1"></div>
+            <form action="/form-submit" method="POST" target="target">
+                <div id="bio-stirring-gauge1"></div>
+                <label>Setpoint:</label>
+                <input type="number" name="b1" id="bio-stirring-gauge1-amount">
+                <button onclick="setGaugeValue(document.getElementById('bio-stirring-gauge1-amount').value, 'bio-stirring-gauge1')">Push Data</button>
+            </form>
+            <form action="/form-submit" method="POST" target="target">
+                <div id="bio-pump1-gauge1"></div>
+                <label>Setpoint:</label>
+                <input type="number" name="b2" id="bio-pump1-gauge1-amount">
+                <button onclick="setGaugeValue(document.getElementById('bio-pump1-gauge1-amount').value, 'bio-pump1-gauge1')">Push Data</button>
+            </form>
+            <form action="/form-submit" method="POST" target="target">
+                <div id="bio-pump2-gauge1"></div>
+                <label>Setpoint:</label>
+                <input type="number" name="b3" id="bio-pump2-gauge1-amount">
+                <button onclick="setGaugeValue(document.getElementById('bio-pump2-gauge1-amount').value, 'bio-pump2-gauge1')">Push Data</button>
+            </form>
+            <form action="/form-submit" method="POST" target="target">
+                <div id="bio-pump3-gauge1"></div>
+                <label>Setpoint:</label>
+                <input type="number" name="b4" id="bio-pump3-gauge1-amount">
+                <button onclick="setGaugeValue(document.getElementById('bio-pump3-gauge1-amount').value, 'bio-pump3-gauge1')">Push Data</button>
+            </form>
+            <form action="/form-submit" method="POST" target="target">
+                <div id="bio-pump4-gauge1"></div>
+                <label>Setpoint:</label>
+                <input type="number" name="b5" id="bio-pump4-gauge1-amount">
+                <button onclick="setGaugeValue(document.getElementById('bio-pump4-gauge1-amount').value, 'bio-pump4-gauge1')">Push Data</button>
+            </form>
+            <form action="/form-submit" method="POST" target="target">
+                <div id="bio-pump5-gauge1"></div>
+                <label>Setpoint:</label>
+                <input type="number" name="b6" id="bio-pump5-gauge1-amount">
+                <button onclick="setGaugeValue(document.getElementById('bio-pump5-gauge1-amount').value, 'bio-pump5-gauge1')">Push Data</button>
+            </form>
         </div>
         <div id="bio-motors-2" style="display: flex">
-            <div id="bio-stirring-gauge2"></div>
-            <div id="bio-pump1-gauge2"></div>
-            <div id="bio-pump2-gauge2"></div>
-            <div id="bio-pump3-gauge2"></div>
-            <div id="bio-pump4-gauge2"></div>
-            <div id="bio-pump5-gauge2"></div>
+            <form action="/form-submit" method="POST" target="target">
+                <div id="bio-stirring-gauge2"></div>
+                <label>Setpoint:</label>
+                <input type="number" name="b7" id="bio-stirring-gauge2-amount">
+                <button onclick="setGaugeValue(document.getElementById('bio-stirring-gauge2-amount').value, 'bio-stirring-gauge2')">Push Data</button>
+            </form>
+            <form action="/form-submit" method="POST" target="target">
+                <div id="bio-pump1-gauge2"></div>
+                <label>Setpoint:</label>
+                <input type="number" name="b8" id="bio-pump1-gauge2-amount">
+                <button onclick="setGaugeValue(document.getElementById('bio-pump1-gauge2-amount').value, 'bio-pump1-gauge2')">Push Data</button>
+            </form>
+            <form action="/form-submit" method="POST" target="target">
+                <div id="bio-pump2-gauge2"></div>
+                <label>Setpoint:</label>
+                <input type="number" name="b9" id="bio-pump2-gauge2-amount">
+                <button onclick="setGaugeValue(document.getElementById('bio-pump2-gauge2-amount').value, 'bio-pump2-gauge2')">Push Data</button>
+            </form>
+            <form action="/form-submit" method="POST" target="target">
+                <div id="bio-pump3-gauge2"></div>
+                <label>Setpoint:</label>
+                <input type="number" name="b10" id="bio-pump3-gauge2-amount">
+                <button onclick="setGaugeValue(document.getElementById('bio-pump3-gauge2-amount').value, 'bio-pump3-gauge2')">Push Data</button>
+            </form>
+            <form action="/form-submit" method="POST" target="target">
+                <div id="bio-pump4-gauge2"></div>
+                <label>Setpoint:</label>
+                <input type="number" name="b11" id="bio-pump4-gauge2-amount">
+                <button onclick="setGaugeValue(document.getElementById('bio-pump4-gauge2-amount').value, 'bio-pump4-gauge2')">Push Data</button>
+            </form>
+            <form action="/form-submit" method="POST" target="target">
+                <div id="bio-pump5-gauge2"></div>
+                <label>Setpoint:</label>
+                <input type="number" name="b12" id="bio-pump5-gauge2-amount">
+                <button onclick="setGaugeValue(document.getElementById('bio-pump5-gauge2-amount').value, 'bio-pump5-gauge2')">Push Data</button>
+            </form>
         </div>
+    </div>
 
+    <div id="chemreactor">
+        <h1>Chemreactor</h1>
+        <div id="chem-thermocouple" style="display: flex">
+            <form action="/form-submit" method="POST" target="target">
+                <div id="chem-pump1-gauge1"></div>
+                <label>Setpoint:</label>
+                <input type="number" name="c1" id="chem-pump1-gauge1-amount">
+                <button onclick="setGaugeValue(document.getElementById('chem-pump1-gauge1-amount').value, 'chem-pump1-gauge1')">Push Data</button>
+            </form>
+            <div id="chem-thermo-gauge1"></div>
+            <div>
+                <div id="chem-thermo-graph" style="height: 350px; width: 1100px;"></div>
+                <label>Number of previous seconds to track: </label>
+                <input type="number" id="chem-thermo-tracking-amount">
+                <button id="chem-thermo-tracking" onclick="setTracking('chem-thermo-tracking', 'chem-thermo-tracking-amount', 'chem-thermo-graph')">Track Data</button>        
+            </div>
+        </div>
     </div>
 
 <script>
@@ -234,19 +326,110 @@ var bio_oxygen_traces = [
         x: [],
         type: 'scatter',
         mode: "lines",
-        name: "Dissolved Oxygen Sensor 1"
+        name: "Dissolved O2 1"
     },
     {
         y: [],
         x: [],
         type: 'scatter',
         mode: "lines",
-        name: "Dissolved Oxygen Sensor 2"
+        name: "Dissolved O2 2"
+    }
+]
+
+//----------------Chemreactor thermocouple traces-----------------------//
+var chem_thermo_traces = [
+    {
+        y: [],
+        x: [],
+        type: 'scatter',
+        mode: "lines",
+        name: "Thermocouple"
     }
 ]
 
 //----------------Thermocouple graph layout-----------------------//
 var thermocouple_layout = {
+    title: 'Temperature Data',
+    xaxis: {
+        title: 'Time',
+        autorange: true,
+        rangeselector: {buttons: [
+            {
+            count: 1,
+            label: '1h',
+            step: 'hour',
+            stepmode: 'backward'
+            },
+            {
+            count: 6,
+            label: '6h',
+            step: 'hour',
+            stepmode: 'backward'
+            },
+            {
+            count: 12,
+            label: '12h',
+            step: 'hour',
+            stepmode: 'backward'
+            },
+            {
+            count: 24,
+            label: '24h',
+            step: 'hour',
+            stepmode: 'backward'
+            },
+            {step: 'all'}
+        ]},
+        type: 'date'
+    },
+    yaxis: {
+        title: 'Degrees Celsius'
+    },
+    showlegend: true
+};
+
+var bio_thermo_layout = {
+    title: 'Temperature Data',
+    xaxis: {
+        title: 'Time',
+        autorange: true,
+        rangeselector: {buttons: [
+            {
+            count: 1,
+            label: '1h',
+            step: 'hour',
+            stepmode: 'backward'
+            },
+            {
+            count: 6,
+            label: '6h',
+            step: 'hour',
+            stepmode: 'backward'
+            },
+            {
+            count: 12,
+            label: '12h',
+            step: 'hour',
+            stepmode: 'backward'
+            },
+            {
+            count: 24,
+            label: '24h',
+            step: 'hour',
+            stepmode: 'backward'
+            },
+            {step: 'all'}
+        ]},
+        type: 'date'
+    },
+    yaxis: {
+        title: 'Degrees Celsius'
+    },
+    showlegend: true
+};
+
+var chem_thermo_layout = {
     title: 'Temperature Data',
     xaxis: {
         title: 'Time',
@@ -367,59 +550,27 @@ var oxygen_layout = {
     },
     showlegend: true
 };
+        
 
+// let pyrolysis = sections[1].split(',')
+// for(let x = 0; x < pyrolysis.length; x++) {
+//     let id = "pyrolysis-thermo-gauge" + (x+1) + "-amount"
+//     document.getElementById(id).value = pyrolysis[x]
+// }
 
-function loadData() {
-    //Get Data	
-    fetch('data.csv')
-    .then(response => response.text())
-    .then(text => {
-        let row = text.split("\r\n") //split entries by row
+// let bio = sections[2].split(',')
+// document.getElementById("bio-stirring-gauge1-amount").value = bio[0]
+// document.getElementById("bio-stirring-gauge2-amount").value = bio[6]
+// for(let x = 0; x < 5; x++) {
+//     let id = "bio-pump" + (x+1) + "-gauge1" + "-amount"
+//     document.getElementById(id).value = bio[x+1]
+// }
+// for(let x = 0; x < 5; x++) {
+//     let id = "bio-pump" + (x+1) + "-gauge2" +"-amount"
+//     document.getElementById(id).value = bio[x+7]
+// }
 
-        for(let n = 1; n < row.length; n++) {
-            let data = row[n].split(',')
-            for(let x = 0; x < pyrolysis_traces.length; x++) {
-                pyrolysis_traces[x].x.push(data[0])     //data[0] pushes time to the x axis
-                pyrolysis_traces[x].y.push(data[x+1])   //data[x+1] to avoid pushing the date and time
-            }
-        }
-
-        //Plot data
-        Plotly.newPlot('pyrolysis-thermo-graph', pyrolysis_traces, thermocouple_layout, {scrollZoom: true});
-        Plotly.newPlot('bio-thermo-graph', bio_thermo_traces, thermocouple_layout, {scrollZoom: true});                    
-        Plotly.newPlot('bio-ph-graph', bio_ph_traces, pH_layout, {scrollZoom: true});
-        Plotly.newPlot('bio-oxygen-graph', bio_oxygen_traces, oxygen_layout, {scrollZoom: true});                                       
-    })
-
-    //load bioreactor data
-
-
-    //load chemreactor data
-
-
-    //send time to ESP32
-    var now = new Date();
-    var rtcTime = now.toLocaleTimeString('en-US', {hour12: false}).split(":")
-    rtcTime[2] = parseInt(rtcTime[2])
-    var rtcDate = now.toLocaleDateString().split("/")
-    fetch(window.location.href + "get-variables", {
-        method: "POST",
-        headers: {
-        'Content-Type': 'text/plain',
-        },
-        body: rtcTime[2]+","+rtcTime[1]+","+rtcTime[0]+","+rtcDate[1]+","+rtcDate[0]+","+rtcDate[2],
-    })
-    .then(response => response.text()) // Get the response as text
-    .then(textData => {
-        if(textData == "logging") {
-            logging = true;
-            document.getElementById("run").textContent = "Logging Data..."
-        } else if(textData == "not logging") {
-            logging = false;
-            document.getElementById("run").textContent = "Start Logging Data"
-        }
-    })
-}
+// document.getElementById("chem-pump1-gauge1-amount").value = sections[3].split(',')
 
 //----------------Standard Gauge Layout-----------------------//
 var gaugeLayout = { width: 270, height: 220, margin: { t: 0, b: 0, l: 40, r: 40} };
@@ -501,6 +652,27 @@ var motor_gauge = [{
 }];
 
 //----------------Pyrolysis Gauges-----------------------//
+var pyrolysisGaugeInfo = {
+    "pyrolysis-thermo-gauge1": {
+        title: "Dissolution Tank",
+    },
+    "pyrolysis-thermo-gauge2": {
+        title: "Valve",
+    },
+    "pyrolysis-thermo-gauge3": {
+        title: "Char Chamber",
+    },
+    "pyrolysis-thermo-gauge4": {
+        title: "Pyrolysis Reactor",
+    },
+    "pyrolysis-thermo-gauge5": {
+        title: "Condenser 1",
+    },
+    "pyrolysis-thermo-gauge6": {
+        title: "Condenser 2",
+    },
+}
+
 //create new gauge plots
 Plotly.newPlot('pyrolysis-thermo-gauge1', thermo_gauge, gaugeLayout);
 Plotly.newPlot('pyrolysis-thermo-gauge2', thermo_gauge, gaugeLayout);
@@ -510,14 +682,75 @@ Plotly.newPlot('pyrolysis-thermo-gauge5', thermo_gauge, gaugeLayout);
 Plotly.newPlot('pyrolysis-thermo-gauge6', thermo_gauge, gaugeLayout);
 
 //adjust titles
-Plotly.restyle('pyrolysis-thermo-gauge1', {title: "Dissolution Tank"})
-Plotly.restyle('pyrolysis-thermo-gauge2', {title: "Valve"})
-Plotly.restyle('pyrolysis-thermo-gauge3', {title: "Char Chamber"})
-Plotly.restyle('pyrolysis-thermo-gauge4', {title: "Pyrolysis Reactor"})
-Plotly.restyle('pyrolysis-thermo-gauge5', {title: "Condenser 1"})
-Plotly.restyle('pyrolysis-thermo-gauge6', {title: "Condenser 2"})
+Plotly.restyle('pyrolysis-thermo-gauge1', {title: pyrolysisGaugeInfo['pyrolysis-thermo-gauge1'].title})
+Plotly.restyle('pyrolysis-thermo-gauge2', {title: pyrolysisGaugeInfo['pyrolysis-thermo-gauge2'].title})
+Plotly.restyle('pyrolysis-thermo-gauge3', {title: pyrolysisGaugeInfo['pyrolysis-thermo-gauge3'].title})
+Plotly.restyle('pyrolysis-thermo-gauge4', {title: pyrolysisGaugeInfo['pyrolysis-thermo-gauge4'].title})
+Plotly.restyle('pyrolysis-thermo-gauge5', {title: pyrolysisGaugeInfo['pyrolysis-thermo-gauge5'].title})
+Plotly.restyle('pyrolysis-thermo-gauge6', {title: pyrolysisGaugeInfo['pyrolysis-thermo-gauge6'].title})
 
 //----------------Bioreactor Gauges-----------------------//
+var bioGaugeInfo = {
+    "bio-thermo-gauge1": {
+        title: "Thermocouple 1",
+    },
+    "bio-ph-gauge1": {
+        title: "pH Sensor 1",
+    },
+    "bio-oxygen-gauge1": {
+        title: "Dissolved Oxygen 1",
+    },
+    "bio-thermo-gauge2": {
+        title: "Thermocouple 2",
+    },
+    "bio-ph-gauge2": {
+        title: "pH Sensor 2",
+    },
+    "bio-oxygen-gauge2": {
+        title: "Dissolved Oxygen 2",
+    },
+}
+var motorGaugeInfo = {
+    "bio-stirring-gauge1": {
+        title: "Stirring Motor 1",
+    },
+    "bio-pump1-gauge1": {
+        title: "Pump 1-1",
+    },
+    "bio-pump2-gauge1": {
+        title: "Pump 1-2",
+    },
+    "bio-pump3-gauge1": {
+        title: "Pump 1-3",
+    },
+    "bio-pump4-gauge1": {
+        title: "Pump 1-4",
+    },
+    "bio-pump5-gauge1": {
+        title: "Pump 1-5",
+    },
+    "bio-stirring-gauge2": {
+        title: "Stirring Motor 2",
+    },
+    "bio-pump1-gauge2": {
+        title: "Pump 2-1",
+    },
+    "bio-pump2-gauge2": {
+        title: "Pump 2-2",
+    },
+    "bio-pump3-gauge2": {
+        title: "Pump 2-3",
+    },
+    "bio-pump4-gauge2": {
+        title: "Pump 2-4",
+    },
+    "bio-pump5-gauge2": {
+        title: "Pump 2-5",
+    },
+    "chem-pump1-gauge1": {
+        title: "Pump 1"
+    }
+}
 //create new gauge plots
 Plotly.newPlot('bio-thermo-gauge1', thermo_gauge, gaugeLayout);
 Plotly.newPlot('bio-thermo-gauge2', thermo_gauge, gaugeLayout);
@@ -543,26 +776,128 @@ Plotly.newPlot("bio-pump4-gauge2", motor_gauge, gaugeLayout);
 Plotly.newPlot("bio-pump5-gauge2", motor_gauge, gaugeLayout);
 
 //restyle
-Plotly.restyle('bio-thermo-gauge1', {title: "Thermocouple 1"})
-Plotly.restyle('bio-thermo-gauge2', {title: "Thermocouple 2"})
-Plotly.restyle('bio-ph-gauge1', {title: "pH Sensor 1"})
-Plotly.restyle('bio-ph-gauge2', {title: "pH Sensor 2"})
-Plotly.restyle('bio-oxygen-gauge1', {title: "Dissolved Oxygen 1"})
-Plotly.restyle('bio-oxygen-gauge2', {title: "Dissolved Oxygen 2"})
-Plotly.restyle('bio-stirring-gauge1', {title: "Stirring Motor 1"})
-Plotly.restyle('bio-stirring-gauge2', {title: "Stirring Motor 2"})
-Plotly.restyle('bio-pump1-gauge1', {title: "Pump 1-1"})
-Plotly.restyle('bio-pump2-gauge1', {title: "Pump 1-2"})
-Plotly.restyle('bio-pump3-gauge1', {title: "Pump 1-3"})
-Plotly.restyle('bio-pump4-gauge1', {title: "Pump 1-4"})
-Plotly.restyle('bio-pump5-gauge1', {title: "Pump 1-5"})
-Plotly.restyle('bio-pump1-gauge2', {title: "Pump 2-1"})
-Plotly.restyle('bio-pump2-gauge2', {title: "Pump 2-2"})
-Plotly.restyle('bio-pump3-gauge2', {title: "Pump 2-3"})
-Plotly.restyle('bio-pump4-gauge2', {title: "Pump 2-4"})
-Plotly.restyle('bio-pump5-gauge2', {title: "Pump 2-5"})
+Plotly.restyle('bio-thermo-gauge1', {title: bioGaugeInfo["bio-thermo-gauge1"].title})
+Plotly.restyle('bio-thermo-gauge2', {title: bioGaugeInfo["bio-thermo-gauge2"].title})
+Plotly.restyle('bio-ph-gauge1', {title: bioGaugeInfo["bio-ph-gauge1"].title})
+Plotly.restyle('bio-ph-gauge2', {title: bioGaugeInfo["bio-ph-gauge2"].title})
+Plotly.restyle('bio-oxygen-gauge1', {title: bioGaugeInfo["bio-oxygen-gauge1"].title})
+Plotly.restyle('bio-oxygen-gauge2', {title: bioGaugeInfo["bio-oxygen-gauge2"].title})
+
+//----------------Chemreactor Gauges-----------------------//
+Plotly.newPlot("chem-thermo-gauge1", thermo_gauge, gaugeLayout);
+Plotly.newPlot("chem-pump1-gauge1", motor_gauge, gaugeLayout);
+
+Plotly.restyle('chem-thermo-gauge1', {title: "Thermocouple"})
 
 //--------------------------------------------------------------------------//
+
+function loadData() {
+    //Get Data	
+    fetch('pyrolysis-data.csv')
+    .then(response => response.text())
+    .then(text => {
+        let row = text.split("\r\n") //split entries by row
+
+        for(let n = 1; n < row.length; n++) {
+            let data = row[n].split(',')
+            for(let x = 0; x < pyrolysis_traces.length; x++) {
+                pyrolysis_traces[x].x.push(data[0])     //data[0] pushes time to the x axis
+                pyrolysis_traces[x].y.push(data[x+1])   //data[x+1] to avoid pushing the date and time
+            }
+        }
+
+        //Plot data
+        Plotly.newPlot('pyrolysis-thermo-graph', pyrolysis_traces, thermocouple_layout, {scrollZoom: true});                                
+    })
+
+    //load bioreactor data
+    fetch('bioreactor-data.csv')
+    .then(response => response.text())
+    .then(text => {
+        let row = text.split("\r\n") //split entries by row
+
+        for(let n = 1; n < row.length; n++) {
+            let data = row[n].split(',')
+            for(let x = 0; x < 2; x++) {
+                bio_thermo_traces[x].x.push(data[0])    //data[0] pushes time to the x axis
+                bio_ph_traces[x].x.push(data[0])        
+                bio_oxygen_traces[x].x.push(data[0])
+                
+                bio_thermo_traces[x].y.push(data[x*3+1]) 
+                bio_ph_traces[x].y.push(data[x*3+2])    
+                bio_oxygen_traces[x].y.push(data[x*3+3])  
+            }
+        }
+
+        //Plot data
+        Plotly.newPlot('bio-thermo-graph', bio_thermo_traces, bio_thermo_layout, {scrollZoom: true});                    
+        Plotly.newPlot('bio-ph-graph', bio_ph_traces, pH_layout, {scrollZoom: true});
+        Plotly.newPlot('bio-oxygen-graph', bio_oxygen_traces, oxygen_layout, {scrollZoom: true});                                       
+    })
+
+    //load chemreactor data
+    fetch('chemreactor-data.csv')
+    .then(response => response.text())
+    .then(text => {
+        let row = text.split("\r\n") //split entries by row
+        for(let n = 1; n < row.length; n++) {
+            let data = row[n].split(',')
+            chem_thermo_traces[0].x.push(data[0])
+            chem_thermo_traces[0].y.push(data[1])
+        }
+        Plotly.newPlot('chem-thermo-graph', chem_thermo_traces, chem_thermo_layout, {scrollZoom: true});
+    })
+
+
+    //send time to ESP32
+    var now = new Date();
+    var rtcTime = now.toLocaleTimeString('en-US', {hour12: false}).split(":")
+    rtcTime[2] = parseInt(rtcTime[2])
+    var rtcDate = now.toLocaleDateString().split("/")
+    fetch(window.location.href + "get-variables", {
+        method: "POST",
+        headers: {
+        'Content-Type': 'text/plain',
+        },
+        body: rtcTime[2]+","+rtcTime[1]+","+rtcTime[0]+","+rtcDate[1]+","+rtcDate[0]+","+rtcDate[2],
+    })
+    .then(response => response.text()) // Get the response as text
+    .then(textData => {
+        let sections = textData.split('-')
+        if(sections[0] == "logging") {
+            logging = true;
+            document.getElementById("run").textContent = "Logging Data..."
+        } else if(sections[0] == "not logging") {
+            logging = false;
+            document.getElementById("run").textContent = "Start Logging Data"
+        }
+
+        let pyrolysis = sections[1].split(',')
+        for(let x = 0; x < pyrolysis.length; x++) {
+            let id = "pyrolysis-thermo-gauge" + (x+1) + "-amount"
+            document.getElementById(id).value = pyrolysis[x]
+        }
+
+        let bio = sections[2].split(',')
+        document.getElementById("bio-stirring-gauge1-amount").value = bio[0]
+        document.getElementById("bio-stirring-gauge2-amount").value = bio[6]
+        Plotly.restyle('bio-stirring-gauge1', {title: motorGaugeInfo["bio-stirring-gauge1"].title, value: bio[0]})
+        Plotly.restyle('bio-stirring-gauge2', {title: motorGaugeInfo["bio-stirring-gauge2"].title, value: bio[6]})
+        for(let x = 0; x < 5; x++) {
+            let id = "bio-pump" + (x+1) + "-gauge1" 
+            document.getElementById(id + "-amount").value = bio[x+1]
+            Plotly.restyle(id, {title: motorGaugeInfo[id].title, value: bio[x+1]})
+        }
+        for(let x = 0; x < 5; x++) {
+            let id = "bio-pump" + (x+1) + "-gauge2"
+            document.getElementById(id + "-amount").value = bio[x+7]
+            Plotly.restyle(id, {title: motorGaugeInfo[id].title, value: bio[x+7]})
+        }
+
+        document.getElementById("chem-pump1-gauge1-amount").value = sections[3].split(',')
+        Plotly.restyle('chem-pump1-gauge1', {title: "Pump 1", value: sections[3].split(',')})
+    })
+}
 
 if (!!window.EventSource) {
     var source = new EventSource('/events');
@@ -577,8 +912,8 @@ if (!!window.EventSource) {
         }
     }, false);
 
-    source.addEventListener('thermocouple-readings', function(e) {
-        var dataVals = e.data.split(',')
+    source.addEventListener('pyrolysis-readings', function(e) {
+        var pyrolysisVals = e.data.split(',')
 
         function pickColor(val) {
             if      (val < 100){return "yellow"}
@@ -586,52 +921,74 @@ if (!!window.EventSource) {
             else               {return "green"}
         }
         
-        var gaugeInfo = [
-            {id: "pyrolysis-thermo-gauge1", value: dataVals[1], title: "Dissolution Tank"},
-            {id: "pyrolysis-thermo-gauge2", value: dataVals[2], title: "Valve"},
-            {id: "pyrolysis-thermo-gauge3", value: dataVals[3], title: "Char Chamber"},
-            {id: "pyrolysis-thermo-gauge4", value: dataVals[4], title: "Pyrolysis Reactor"},
-            {id: "pyrolysis-thermo-gauge5", value: dataVals[5], title: "Condenser 1"},
-            {id: "pyrolysis-thermo-gauge6", value: dataVals[6], title: "Condenser 2"},
-        ]
-        
-        //push values to gauges (need to change titles too for some reason to keep them there lol)
-        for(let n = 0; n < gaugeInfo.length; n++) {
-            Plotly.restyle(gaugeInfo[n].id, {value: gaugeInfo[n].value, title: gaugeInfo[n].title, 'gauge.bar.color': pickColor(gaugeInfo[n].value)})
-        }
+        let ids = Object.keys(pyrolysisGaugeInfo)
+        ids.forEach((id) => {
+            Plotly.restyle(id, {value: pyrolysisVals[ids.indexOf(id)+1], title: pyrolysisGaugeInfo[id].title, 'gauge.bar.color': pickColor(pyrolysisVals[ids.indexOf(id)+1])})
+        })
         
         //plot values
         if(logging) {
             //could use a for loop but I only want to call extendTraces once
             Plotly.extendTraces('pyrolysis-thermo-graph', {
-                x: [[dataVals[0]],[dataVals[0]],[dataVals[0]],[dataVals[0]],[dataVals[0]],[dataVals[0]]],
-                y: [[dataVals[1]],[dataVals[2]],[dataVals[3]],[dataVals[4]],[dataVals[5]],[dataVals[6]]]
+                x: [[pyrolysisVals[0]],[pyrolysisVals[0]],[pyrolysisVals[0]],[pyrolysisVals[0]],[pyrolysisVals[0]],[pyrolysisVals[0]]],
+                y: [[pyrolysisVals[1]],[pyrolysisVals[2]],[pyrolysisVals[3]],[pyrolysisVals[4]],[pyrolysisVals[5]],[pyrolysisVals[6]]]
             }, [0, 1, 2, 3, 4, 5])
 
-            //Plotly.relayout("graph1", {rangeselector: {range: [pyrolysis_traces[0].x[0], pyrolysis_traces[0].x[pyrolysis_traces[0].x.length-1]]}})
-
-            if(tracking) {
-                trackData(document.getElementById('tracking-amount').value)
+            if(document.getElementById('pyrolysis-tracking').textContent == 'Tracking Data...') {
+                trackData(document.getElementById('pyrolysis-tracking-amount').value, 'pyrolysis-thermo-graph')
+            }
+            if(document.getElementById('bio-thermo-tracking').textContent == 'Tracking Data...') {
+                trackData(document.getElementById('bio-thermo-tracking-amount').value, 'bio-thermo-graph')
+            }
+            if(document.getElementById('bio-ph-tracking').textContent == 'Tracking Data...') {
+                trackData(document.getElementById('bio-ph-tracking-amount').value, 'bio-ph-graph')
+            }
+            if(document.getElementById('bio-oxygen-tracking').textContent == 'Tracking Data...') {
+                trackData(document.getElementById('bio-oxygen-tracking-amount').value, 'bio-oxygen-graph')
+            }
+            if(document.getElementById('chem-thermo-tracking').textContent == 'Tracking Data...') {
+                trackData(document.getElementById('chem-thermo-tracking-amount').value, 'chem-thermo-graph')
             }
         }
-  }, false);
-}
+    }, false);
 
-function sendAllData() {
-    // URL to send the POST request to
-    var url = window.location.href;
+    source.addEventListener('bioreactor-readings', function(e) {
+        var bioVals = e.data.split(',')
+        
+        let ids = Object.keys(bioGaugeInfo)
+        ids.forEach((id) => {
+            Plotly.restyle(id, {value: bioVals[ids.indexOf(id)+1], title: bioGaugeInfo[id].title, 'gauge.bar.color': "blue"})
+        })
 
-    var slices = document.querySelectorAll(".slice");
-    var allData = []
-    // Data to be sent in the POST request
-    for(let x = 0; x < slices.length; x++) {
-        var inputs = slices[x].querySelectorAll("input")
-        for(let n = 0; n < inputs.length; n++) {
-            allData.push(inputs[n].value)
+        //plot values
+        if(logging) {
+            Plotly.extendTraces('bio-thermo-graph', {
+                x: [[bioVals[0]],[bioVals[0]]],
+                y: [[bioVals[1]],[bioVals[4]]]
+            }, [0, 1])
+            Plotly.extendTraces('bio-ph-graph', {
+                x: [[bioVals[0]],[bioVals[0]]],
+                y: [[bioVals[2]],[bioVals[5]]]
+            }, [0, 1])
+            Plotly.extendTraces('bio-oxygen-graph', {
+                x: [[bioVals[0]],[bioVals[0]]],
+                y: [[bioVals[3]],[bioVals[6]]]
+            }, [0, 1])
         }
-    }
+    }, false)
 
-    sendPOST(allData, "all-data")
+    source.addEventListener('chemreactor-readings', function(e) {
+        var chemVals = e.data.split(',')
+
+        Plotly.restyle('chem-thermo-gauge1', {value: chemVals[1], title: 'Thermocouple 1', 'gauge.bar.color': "blue"})
+
+        if(logging) {
+            Plotly.extendTraces('chem-thermo-graph', {
+                x: [[chemVals[0]]],
+                y: [[chemVals[1]]]
+            }, [0])
+        }
+    }, false)
 }
 
 var logging = false;
@@ -662,20 +1019,22 @@ function sendPOST(data, action) {
     })
 }
 
-var tracking = false;
-function setTracking() {
-    tracking = !tracking
-    if(tracking) {
-        document.getElementById('tracking').textContent = 'Tracking Data...'
-        trackData(document.getElementById('tracking-amount').value)
+function setTracking(buttonID, inputID, graphID) {
+    if(document.getElementById(buttonID).textContent == 'Track Data') {
+        document.getElementById(buttonID).textContent = 'Tracking Data...'
+        trackData(document.getElementById(inputID).value, graphID)
     } else {
-        document.getElementById('tracking').textContent = 'Track Data'
+        document.getElementById(buttonID).textContent = 'Track Data'
     }
 }
-function trackData(amount) {
+function trackData(amount, graphID) {
     let lastIndex = pyrolysis_traces[0].x.length-1
     let currentDate = new Date(pyrolysis_traces[0].x[lastIndex])
-    Plotly.relayout("pyrolysis-thermo-graph", {"xaxis.range": [currentDate - amount*1000, currentDate]})
+    Plotly.relayout(graphID, {"xaxis.range": [currentDate - amount*1000, currentDate]})
+}
+
+function setGaugeValue(amount, gaugeID) {
+    Plotly.update(gaugeID, {value: amount > 100 ? 100 : amount, title: motorGaugeInfo[gaugeID].title})
 }
 </script>
 

@@ -1,7 +1,7 @@
 #include <WiFi.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
-//#include <ArduinoJson.h>
+#include <ArduinoJson.h>
 
 #include "SD.h"
 #include "FS.h"
@@ -26,8 +26,19 @@ AsyncEventSource events("/events");
 bool logging = false; //logging data to SD card and graphs
 
 //slice data variables
-#define NUM_OF_DATA 6
-uint16_t pyrolysisData[NUM_OF_DATA];
+#define PYROLYSIS_NUM_DATA 6
+uint16_t pyrolysisData[PYROLYSIS_NUM_DATA];
+float pyrolysisSetpoint[PYROLYSIS_NUM_DATA];
+
+#define BIO_NUM_DATA 2
+#define BIO_NUM_PUMPS 12
+float bioThermoData[BIO_NUM_DATA];
+float bioPHData[BIO_NUM_DATA];
+float bioOxygenData[BIO_NUM_DATA];
+float bioPumpSetpoint[BIO_NUM_PUMPS];
+
+float chemThermoData;
+float chemPumpSetpoint;
 
 void initSDCard(){
   pinMode(SD_CS, OUTPUT);      
@@ -100,6 +111,15 @@ void setup() {
     for (int i = 0; i < params; i++) {
       AsyncWebParameter* p = request->getParam(i);
       Serial.printf("POST[%s]: %s\n", p->name().c_str(), p->value().c_str());
+      String postName = p->name().c_str();
+      String postValue = p->value().c_str();
+      if(postName.charAt(0) == 'p') {
+        pyrolysisSetpoint[postName.substring(1).toInt() - 1] = postValue.toFloat();
+      } else if(postName.charAt(0) == 'b') {
+        bioPumpSetpoint[postName.substring(1).toInt() - 1] = postValue.toFloat();
+      } else if(postName.charAt(0) == 'c') {
+        chemPumpSetpoint = postValue.toFloat();
+      }
     }
   });
 
@@ -127,12 +147,30 @@ void setup() {
       }
       timeDate[5] = s.toInt();
       rtc.setTime(timeDate[0], timeDate[1], timeDate[2], timeDate[3], timeDate[4], timeDate[5]);
-      
+
+
+      String toServer = "";
       if(logging) {
-        request->send(200, "text/plain", "logging");
+        toServer += "logging-";
       } else {
-        request->send(200, "text/plain", "not logging");
-      }      
+        toServer += "not logging-";
+      }
+           
+      for(uint8_t x = 0; x < PYROLYSIS_NUM_DATA; x++) {
+        toServer += String(pyrolysisSetpoint[x]) + ",";
+      }
+      toServer.remove(toServer.length()-1);
+      toServer += '-';
+      
+      for(uint8_t x = 0; x < BIO_NUM_PUMPS; x++) {
+        toServer += String(bioPumpSetpoint[x]) + ",";
+      }
+      toServer.remove(toServer.length()-1);
+      toServer += '-';
+
+      toServer += String(chemPumpSetpoint);
+      
+      request->send(200, "text/plain", toServer);
     } else if(request->url() == "/logging") {
       Serial.println("log to SD card");
       logging = true;
@@ -160,27 +198,47 @@ void setup() {
 uint32_t lastPOST = 0;
 void loop() {
   //get slice data from slices
-  if(millis() - lastPOST > 2000) {
+  if(millis() - lastPOST > 5000) {
     Serial.println("getting data");
     //get time
-    String toServer = rtc.getTime("%F %T");
+    String pyrolysisToServer = rtc.getTime("%F %T");
+    String bioToServer = pyrolysisToServer;
+    String chemToServer = pyrolysisToServer;
     
-    //receive data from BREAD (currently random numbers)
-    for(uint8_t n = 0; n < NUM_OF_DATA; n++) {
+    //Pyrolysis data
+    for(uint8_t n = 0; n < PYROLYSIS_NUM_DATA; n++) { //receive data from BREAD (currently random numbers)
       pyrolysisData[n] = random(400);
     }
 
-    //convert to data to string to save to SD card
-    for(uint8_t n = 0; n < NUM_OF_DATA; n++) {
-      toServer += "," + String(pyrolysisData[n]);
+    //Bioreactor data
+    for(uint8_t n = 0; n < BIO_NUM_DATA; n++) {
+      bioThermoData[n] = random(400);
+      bioPHData[n] = random(14);
+      bioOxygenData[n] = random(100);
     }
 
+    //Chemreactor data
+    chemThermoData = random(400);
+
+    //convert to data to string to save to SD card and send to server
+    for(uint8_t n = 0; n < PYROLYSIS_NUM_DATA; n++) {
+      pyrolysisToServer += "," + String(pyrolysisData[n]);
+    }
+    for(uint8_t n = 0; n < BIO_NUM_DATA; n++) {
+      bioToServer += "," + String(bioThermoData[n]) + "," + String(bioPHData[n]) + "," + String(bioOxygenData[n]);
+    }
+    chemToServer += "," + String(chemThermoData);
+
     //send data to website
-    events.send(toServer.c_str(), "thermocouple-readings", millis());
+    events.send(pyrolysisToServer.c_str(), "pyrolysis-readings", millis());
+    events.send(bioToServer.c_str(), "bioreactor-readings", millis());
+    events.send(bioToServer.c_str(), "chemreactor-readings", millis());
     
     //log onto the SD card
     if(logging) {
-      appendFile(SD, "/data.csv", "\r\n" + toServer);
+      appendFile(SD, "/pyrolysis-data.csv", "\r\n" + pyrolysisToServer);
+      appendFile(SD, "/bioreactor-data.csv", "\r\n" + bioToServer);
+      appendFile(SD, "/chemreactor-data.csv", "\r\n" + chemToServer);
     }
     lastPOST = millis();
   }
