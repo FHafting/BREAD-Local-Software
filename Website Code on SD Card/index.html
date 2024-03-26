@@ -8,6 +8,7 @@
 
     <h1>BREAD Configuration and Controls</h1>
     <button id="run" onclick="setRunning()">Start Logging Data</button>
+    <button id="estop" onclick="setESTOP()" style="color: white; background-color: red;">E-STOP OFF</button>
     <iframe name="target" style="display:none;"></iframe>
     <hr>
 
@@ -18,79 +19,157 @@
         <div style="display: flex">
             <div>
                 <div id="pyrolysis-thermo-gauge1"></div>
-                <p>Status: ON/OFF (from slice) </p>
+                <!-- <p>Status: ON/OFF (from slice) </p> -->
                 <form action="/form-submit" method="POST" target="target">
                     <label>Setpoint:</label>
-                    <input type="number" name="p1" id="pyrolysis-thermo-gauge1-amount">
+                    <input type="number" step="0.01" name="ps1" id="pyrolysis-thermo-gauge1-amount">
+                    <button onclick="
+                        pyrolysisGaugeInfo['pyrolysis-thermo-gauge1'].setpoint = document.getElementById('pyrolysis-thermo-gauge1-amount').value;
+                        updatePyrolysisGauge('pyrolysis-thermo-gauge1');
+                    ">Push Data</button>
+                </form>
+                <br>
+                <form action="/form-submit" method="POST" target="target">
+                    <label>Kp:</label>
+                    <input type="number" step="0.01" name="pp1" id="pyrolysis-thermo-gauge1-kp">
+                    <br>
+                    <label>Ki:</label>
+                    <input type="number" step="0.01" name="pi1" id="pyrolysis-thermo-gauge1-ki">
+                    <br>
+                    <label>Kd:</label>
+                    <input type="number" step="0.01" name="pd1" id="pyrolysis-thermo-gauge1-kd">
                     <button onclick="">Push Data</button>
                 </form>
-                <p>Kp: </p>
-                <p>Ki: </p>
                 <p>Thermocouple #: </p>
                 <p>Heater #: </p>
             </div>
             <div>
                 <div id="pyrolysis-thermo-gauge2"></div>
-                <p>Status: ON/OFF (from slice) </p>
+                <!-- <p>Status: ON/OFF (from slice) </p> -->
                 <form action="/form-submit" method="POST" target="target">
                     <label>Setpoint:</label>
-                    <input type="number" name="p2" id="pyrolysis-thermo-gauge2-amount">
+                    <input type="number" step="0.01" name="ps2" id="pyrolysis-thermo-gauge2-amount">
+                    <button onclick="
+                        pyrolysisGaugeInfo['pyrolysis-thermo-gauge2'].setpoint = document.getElementById('pyrolysis-thermo-gauge2-amount').value;
+                        updatePyrolysisGauge('pyrolysis-thermo-gauge2');
+                    ">Push Data</button>                
+                </form>
+                <br>
+                <form action="/form-submit" method="POST" target="target">
+                    <label>Kp:</label>
+                    <input type="number" step="0.01" name="pp2" id="pyrolysis-thermo-gauge2-kp">
+                    <br>
+                    <label>Ki:</label>
+                    <input type="number" step="0.01" name="pi2" id="pyrolysis-thermo-gauge2-ki">
+                    <br>
+                    <label>Kd:</label>
+                    <input type="number" step="0.01" name="pd2" id="pyrolysis-thermo-gauge2-kd">
                     <button onclick="">Push Data</button>
                 </form>
-                <p>Kp: </p>
-                <p>Ki: </p>
                 <p>Thermocouple #: </p>
                 <p>Heater #: </p>
             </div>
             <div>
                 <div id="pyrolysis-thermo-gauge3"></div>
-                <p>Status: ON/OFF (from slice) </p>
+                <!-- <p>Status: ON/OFF (from slice) </p> -->
                 <form action="/form-submit" method="POST" target="target">
                     <label>Setpoint:</label>
-                    <input type="number" name="p3" id="pyrolysis-thermo-gauge3-amount">
+                    <input type="number" step="0.01" name="ps3" id="pyrolysis-thermo-gauge3-amount">
+                    <button onclick="
+                        pyrolysisGaugeInfo['pyrolysis-thermo-gauge3'].setpoint = document.getElementById('pyrolysis-thermo-gauge3-amount').value;
+                        updatePyrolysisGauge('pyrolysis-thermo-gauge3');
+                    ">Push Data</button>    
+                </form>
+                <br>
+                <form action="/form-submit" method="POST" target="target">
+                    <label>Kp:</label>
+                    <input type="number" step="0.01" name="pp3" id="pyrolysis-thermo-gauge3-kp">
+                    <br>
+                    <label>Ki:</label>
+                    <input type="number" step="0.01" name="pi3" id="pyrolysis-thermo-gauge3-ki">
+                    <br>
+                    <label>Kd:</label>
+                    <input type="number" step="0.01" name="pd3" id="pyrolysis-thermo-gauge3-kd">
                     <button onclick="">Push Data</button>
                 </form>
-                <p>Kp: </p>
-                <p>Ki: </p>
                 <p>Thermocouple #: </p>
                 <p>Heater #: </p>
             </div>
             <div>
                 <div id="pyrolysis-thermo-gauge4"></div>
-                <p>Status: ON/OFF (from slice) </p>
+                <!-- <p>Status: ON/OFF (from slice) </p> -->
                 <form action="/form-submit" method="POST" target="target">
                     <label>Setpoint:</label>
-                    <input type="number" name="p4" id="pyrolysis-thermo-gauge4-amount">
+                    <input type="number" step="0.01" name="ps4" id="pyrolysis-thermo-gauge4-amount">
+                    <button onclick="
+                        pyrolysisGaugeInfo['pyrolysis-thermo-gauge4'].setpoint = document.getElementById('pyrolysis-thermo-gauge4-amount').value;
+                        updatePyrolysisGauge('pyrolysis-thermo-gauge4');
+                    ">Push Data</button>    
+                </form>
+                <br>
+                <form action="/form-submit" method="POST" target="target">
+                    <label>Kp:</label>
+                    <input type="number" step="0.01" name="pp4" id="pyrolysis-thermo-gauge4-kp">
+                    <br>
+                    <label>Ki:</label>
+                    <input type="number" step="0.01" name="pi4" id="pyrolysis-thermo-gauge4-ki">
+                    <br>
+                    <label>Kd:</label>
+                    <input type="number" step="0.01" name="pd4" id="pyrolysis-thermo-gauge4-kd">
                     <button onclick="">Push Data</button>
                 </form>
-                <p>Kp: </p>
-                <p>Ki: </p>
                 <p>Thermocouple #: </p>
                 <p>Heater #: </p>
             </div>
             <div>
                 <div id="pyrolysis-thermo-gauge5"></div>
-                <p>Status: ON/OFF (from slice) </p>
+                <!-- <p>Status: ON/OFF (from slice) </p> -->
                 <form action="/form-submit" method="POST" target="target">
                     <label>Setpoint:</label>
-                    <input type="number" name="p5" id="pyrolysis-thermo-gauge5-amount">
+                    <input type="number" step="0.01" name="ps5" id="pyrolysis-thermo-gauge5-amount">
+                    <button onclick="
+                        pyrolysisGaugeInfo['pyrolysis-thermo-gauge5'].setpoint = document.getElementById('pyrolysis-thermo-gauge5-amount').value;
+                        updatePyrolysisGauge('pyrolysis-thermo-gauge5');
+                    ">Push Data</button>    
+                </form>
+                <br>
+                <form action="/form-submit" method="POST" target="target">
+                    <label>Kp:</label>
+                    <input type="number" step="0.01" name="pp5" id="pyrolysis-thermo-gauge5-kp">
+                    <br>
+                    <label>Ki:</label>
+                    <input type="number" step="0.01" name="pi5" id="pyrolysis-thermo-gauge5-ki">
+                    <br>
+                    <label>Kd:</label>
+                    <input type="number" step="0.01" name="pd5" id="pyrolysis-thermo-gauge5-kd">
                     <button onclick="">Push Data</button>
                 </form>
-                <p>Kp: </p>
-                <p>Ki: </p>
                 <p>Thermocouple #: </p>
                 <p>Heater #: </p>
             </div>
             <div>
                 <div id="pyrolysis-thermo-gauge6"></div>
-                <p>Status: ON/OFF (from slice) </p>
+                <!-- <p>Status: ON/OFF (from slice) </p> -->
                 <form action="/form-submit" method="POST" target="target">
                     <label>Setpoint:</label>
-                    <input type="number" name="p6" id="pyrolysis-thermo-gauge6-amount">
+                    <input type="number" step="0.01" name="ps6" id="pyrolysis-thermo-gauge6-amount">
+                    <button onclick="
+                        pyrolysisGaugeInfo['pyrolysis-thermo-gauge6'].setpoint = document.getElementById('pyrolysis-thermo-gauge6-amount').value;
+                        updatePyrolysisGauge('pyrolysis-thermo-gauge6');
+                    ">Push Data</button>   
+                </form>
+                <br>
+                <form action="/form-submit" method="POST" target="target">
+                    <label>Kp:</label>
+                    <input type="number" step="0.01" name="pp6" id="pyrolysis-thermo-gauge6-kp">
+                    <br>
+                    <label>Ki:</label>
+                    <input type="number" step="0.01" name="pi6" id="pyrolysis-thermo-gauge6-ki">
+                    <br>
+                    <label>Kd:</label>
+                    <input type="number" step="0.01" name="pd6" id="pyrolysis-thermo-gauge6-kd">
                     <button onclick="">Push Data</button>
                 </form>
-                <p>Kp: </p>
-                <p>Ki: </p>
                 <p>Thermocouple #: </p>
                 <p>Heater #: </p>
             </div>
@@ -119,8 +198,54 @@
         </div>
        
         <div id="bio-ph" style="display: flex">
-            <div id="bio-ph-gauge1"></div>
-            <div id="bio-ph-gauge2"></div>
+            <div>
+                <div id="bio-ph-gauge1"></div>
+                <form action="/form-submit" method="POST" target="target">
+                    <label>Setpoint:</label>
+                    <input type="number" step="0.01" name="bs1" id="bio-ph-gauge1-amount">
+                    <button onclick="
+                        bioGaugeInfo['bio-ph-gauge1'].setpoint = document.getElementById('bio-ph-gauge1-amount').value;
+                        updateBioPhGauge('bio-ph-gauge1')
+                    ">Push Data</button>    
+                </form>
+                <br>
+                <form action="/form-submit" method="POST" target="target">
+                    <label>Kp:</label>
+                    <input type="number" step="0.01" name="bp1" id="bio-ph-gauge1-kp">
+                    <br>
+                    <label>Ki:</label>
+                    <input type="number" step="0.01" name="bi1" id="bio-ph-gauge1-ki">
+                    <br>
+                    <label>Kd:</label>
+                    <input type="number" step="0.01" name="bd1" id="bio-ph-gauge1-kd">
+                    <br>
+                    <button onclick="">Push Data</button>
+                </form>
+            </div>
+            <div>
+                <div id="bio-ph-gauge2"></div>
+                <form action="/form-submit" method="POST" target="target">
+                    <label>Setpoint:</label>
+                    <input type="number" step="0.01" name="bs2" id="bio-ph-gauge2-amount">
+                    <button onclick="
+                        bioGaugeInfo['bio-ph-gauge2'].setpoint = document.getElementById('bio-ph-gauge2-amount').value;
+                        updateBioPhGauge('bio-ph-gauge2')
+                    ">Push Data</button>    
+                </form>
+                <br>
+                <form action="/form-submit" method="POST" target="target">
+                    <label>Kp:</label>
+                    <input type="number" step="0.01" name="bp2" id="bio-ph-gauge2-kp">
+                    <br>
+                    <label>Ki:</label>
+                    <input type="number" step="0.01" name="bi2" id="bio-ph-gauge2-ki">
+                    <br>
+                    <label>Kd:</label>
+                    <input type="number" step="0.01" name="bi2" id="bio-ph-gauge2-kd">
+                    <br>
+                    <button onclick="">Push Data</button>
+                </form>
+            </div>
             <div>
                 <div id="bio-ph-graph" style="height: 350px; width: 1100px;"></div>
                 <label>Number of previous seconds to track: </label>
@@ -142,37 +267,37 @@
             <form action="/form-submit" method="POST" target="target">
                 <div id="bio-stirring-gauge1"></div>
                 <label>Setpoint:</label>
-                <input type="number" name="b1" id="bio-stirring-gauge1-amount">
+                <input type="number" step="0.01" name="bm1" id="bio-stirring-gauge1-amount">
                 <button onclick="setGaugeValue(document.getElementById('bio-stirring-gauge1-amount').value, 'bio-stirring-gauge1')">Push Data</button>
             </form>
             <form action="/form-submit" method="POST" target="target">
                 <div id="bio-pump1-gauge1"></div>
                 <label>Setpoint:</label>
-                <input type="number" name="b2" id="bio-pump1-gauge1-amount">
+                <input type="number" step="0.01" name="bm2" id="bio-pump1-gauge1-amount">
                 <button onclick="setGaugeValue(document.getElementById('bio-pump1-gauge1-amount').value, 'bio-pump1-gauge1')">Push Data</button>
             </form>
             <form action="/form-submit" method="POST" target="target">
                 <div id="bio-pump2-gauge1"></div>
                 <label>Setpoint:</label>
-                <input type="number" name="b3" id="bio-pump2-gauge1-amount">
+                <input type="number" step="0.01" name="bm3" id="bio-pump2-gauge1-amount">
                 <button onclick="setGaugeValue(document.getElementById('bio-pump2-gauge1-amount').value, 'bio-pump2-gauge1')">Push Data</button>
             </form>
             <form action="/form-submit" method="POST" target="target">
                 <div id="bio-pump3-gauge1"></div>
                 <label>Setpoint:</label>
-                <input type="number" name="b4" id="bio-pump3-gauge1-amount">
+                <input type="number" step="0.01" name="bm4" id="bio-pump3-gauge1-amount">
                 <button onclick="setGaugeValue(document.getElementById('bio-pump3-gauge1-amount').value, 'bio-pump3-gauge1')">Push Data</button>
             </form>
             <form action="/form-submit" method="POST" target="target">
                 <div id="bio-pump4-gauge1"></div>
                 <label>Setpoint:</label>
-                <input type="number" name="b5" id="bio-pump4-gauge1-amount">
+                <input type="number" step="0.01" name="bm5" id="bio-pump4-gauge1-amount">
                 <button onclick="setGaugeValue(document.getElementById('bio-pump4-gauge1-amount').value, 'bio-pump4-gauge1')">Push Data</button>
             </form>
             <form action="/form-submit" method="POST" target="target">
                 <div id="bio-pump5-gauge1"></div>
                 <label>Setpoint:</label>
-                <input type="number" name="b6" id="bio-pump5-gauge1-amount">
+                <input type="number" step="0.01" name="bm6" id="bio-pump5-gauge1-amount">
                 <button onclick="setGaugeValue(document.getElementById('bio-pump5-gauge1-amount').value, 'bio-pump5-gauge1')">Push Data</button>
             </form>
         </div>
@@ -180,37 +305,37 @@
             <form action="/form-submit" method="POST" target="target">
                 <div id="bio-stirring-gauge2"></div>
                 <label>Setpoint:</label>
-                <input type="number" name="b7" id="bio-stirring-gauge2-amount">
+                <input type="number" step="0.01" name="bm7" id="bio-stirring-gauge2-amount">
                 <button onclick="setGaugeValue(document.getElementById('bio-stirring-gauge2-amount').value, 'bio-stirring-gauge2')">Push Data</button>
             </form>
             <form action="/form-submit" method="POST" target="target">
                 <div id="bio-pump1-gauge2"></div>
                 <label>Setpoint:</label>
-                <input type="number" name="b8" id="bio-pump1-gauge2-amount">
+                <input type="number" step="0.01" name="bm8" id="bio-pump1-gauge2-amount">
                 <button onclick="setGaugeValue(document.getElementById('bio-pump1-gauge2-amount').value, 'bio-pump1-gauge2')">Push Data</button>
             </form>
             <form action="/form-submit" method="POST" target="target">
                 <div id="bio-pump2-gauge2"></div>
                 <label>Setpoint:</label>
-                <input type="number" name="b9" id="bio-pump2-gauge2-amount">
+                <input type="number" step="0.01" name="bm9" id="bio-pump2-gauge2-amount">
                 <button onclick="setGaugeValue(document.getElementById('bio-pump2-gauge2-amount').value, 'bio-pump2-gauge2')">Push Data</button>
             </form>
             <form action="/form-submit" method="POST" target="target">
                 <div id="bio-pump3-gauge2"></div>
                 <label>Setpoint:</label>
-                <input type="number" name="b10" id="bio-pump3-gauge2-amount">
+                <input type="number" step="0.01" name="bm10" id="bio-pump3-gauge2-amount">
                 <button onclick="setGaugeValue(document.getElementById('bio-pump3-gauge2-amount').value, 'bio-pump3-gauge2')">Push Data</button>
             </form>
             <form action="/form-submit" method="POST" target="target">
                 <div id="bio-pump4-gauge2"></div>
                 <label>Setpoint:</label>
-                <input type="number" name="b11" id="bio-pump4-gauge2-amount">
+                <input type="number" step="0.01" name="bm11" id="bio-pump4-gauge2-amount">
                 <button onclick="setGaugeValue(document.getElementById('bio-pump4-gauge2-amount').value, 'bio-pump4-gauge2')">Push Data</button>
             </form>
             <form action="/form-submit" method="POST" target="target">
                 <div id="bio-pump5-gauge2"></div>
                 <label>Setpoint:</label>
-                <input type="number" name="b12" id="bio-pump5-gauge2-amount">
+                <input type="number" step="0.01" name="bm12" id="bio-pump5-gauge2-amount">
                 <button onclick="setGaugeValue(document.getElementById('bio-pump5-gauge2-amount').value, 'bio-pump5-gauge2')">Push Data</button>
             </form>
         </div>
@@ -222,10 +347,32 @@
             <form action="/form-submit" method="POST" target="target">
                 <div id="chem-pump1-gauge1"></div>
                 <label>Setpoint:</label>
-                <input type="number" name="c1" id="chem-pump1-gauge1-amount">
+                <input type="number" step="0.01" name="cm1" id="chem-pump1-gauge1-amount">
                 <button onclick="setGaugeValue(document.getElementById('chem-pump1-gauge1-amount').value, 'chem-pump1-gauge1')">Push Data</button>
             </form>
-            <div id="chem-thermo-gauge1"></div>
+            <div>
+                <div id="chem-thermo-gauge1"></div>
+                <form action="/form-submit" method="POST" target="target">
+                    <label>Setpoint:</label>
+                    <input type="number" step="0.01" name="cs1" id="chem-thermo-gauge1-amount">
+                    <button onclick="
+                       chemGaugeInfo['chem-thermo-gauge1'].setpoint = document.getElementById('chem-thermo-gauge1-amount').value
+                       updateChemGauge('chem-thermo-gauge1')
+                    ">Push Data</button>   
+                </form>
+                <br>
+                <form action="/form-submit" method="POST" target="target">
+                    <label>Kp:</label>
+                    <input type="number" step="0.01" name="cp1" id="chem-thermo-gauge1-kp">
+                    <br>
+                    <label>Ki:</label>
+                    <input type="number" step="0.01" name="ci1" id="chem-thermo-gauge1-ki">
+                    <br>
+                    <label>Kd:</label>
+                    <input type="number" step="0.01" name="cd1" id="chem-thermo-gauge1-kd">
+                    <button onclick="">Push Data</button>
+                </form>
+            </div>
             <div>
                 <div id="chem-thermo-graph" style="height: 350px; width: 1100px;"></div>
                 <label>Number of previous seconds to track: </label>
@@ -588,9 +735,25 @@ var thermo_gauge = [{
         bar: { color: "blue" },
         steps: [
             { range: [0, 400], color: "#dddddd" },
-            { range: [95, 105], color: "yellow" },
+            { range: [145, 155], color: "yellow" },
             { range: [195, 205], color: "green" },
-            { range: [295, 305], color: "red" }
+            { range: [245, 255], color: "red" }
+        ],
+    }
+}];
+
+var thermo_bio_gauge = [{
+    domain: { x: [0, 1], y: [0, 1] },
+    value: 0,
+    title: { text: "" },
+    type: "indicator",
+    mode: "gauge+number",
+    delta: { reference: 200 },
+    gauge: {
+        axis: { range: [null, 400] },
+        bar: { color: "blue" },
+        steps: [
+            { range: [0, 400], color: "#dddddd" },
         ],
     }
 }];
@@ -655,21 +818,33 @@ var motor_gauge = [{
 var pyrolysisGaugeInfo = {
     "pyrolysis-thermo-gauge1": {
         title: "Dissolution Tank",
+        setpoint: 200,
+        value: 0,
     },
     "pyrolysis-thermo-gauge2": {
         title: "Valve",
+        setpoint: 200,
+        value: 0,
     },
     "pyrolysis-thermo-gauge3": {
         title: "Char Chamber",
+        setpoint: 200,
+        value: 0,
     },
     "pyrolysis-thermo-gauge4": {
         title: "Pyrolysis Reactor",
+        setpoint: 200,
+        value: 0,
     },
     "pyrolysis-thermo-gauge5": {
         title: "Condenser 1",
+        setpoint: 200,
+        value: 0,
     },
     "pyrolysis-thermo-gauge6": {
         title: "Condenser 2",
+        setpoint: 200,
+        value: 0,
     },
 }
 
@@ -693,21 +868,29 @@ Plotly.restyle('pyrolysis-thermo-gauge6', {title: pyrolysisGaugeInfo['pyrolysis-
 var bioGaugeInfo = {
     "bio-thermo-gauge1": {
         title: "Thermocouple 1",
+        value: 0,
     },
     "bio-ph-gauge1": {
         title: "pH Sensor 1",
+        value: 0,
+        setpoint: 0,
     },
     "bio-oxygen-gauge1": {
         title: "Dissolved Oxygen 1",
+        value: 0,
     },
     "bio-thermo-gauge2": {
         title: "Thermocouple 2",
+        value: 0,
     },
     "bio-ph-gauge2": {
         title: "pH Sensor 2",
+        value: 0,
+        setpoint: 0,
     },
     "bio-oxygen-gauge2": {
         title: "Dissolved Oxygen 2",
+        value: 0,
     },
 }
 var motorGaugeInfo = {
@@ -752,8 +935,8 @@ var motorGaugeInfo = {
     }
 }
 //create new gauge plots
-Plotly.newPlot('bio-thermo-gauge1', thermo_gauge, gaugeLayout);
-Plotly.newPlot('bio-thermo-gauge2', thermo_gauge, gaugeLayout);
+Plotly.newPlot('bio-thermo-gauge1', thermo_bio_gauge, gaugeLayout);
+Plotly.newPlot('bio-thermo-gauge2', thermo_bio_gauge, gaugeLayout);
 
 Plotly.newPlot('bio-ph-gauge1', pH_gauge, gaugeLayout);
 Plotly.newPlot('bio-ph-gauge2', pH_gauge, gaugeLayout);
@@ -784,10 +967,17 @@ Plotly.restyle('bio-oxygen-gauge1', {title: bioGaugeInfo["bio-oxygen-gauge1"].ti
 Plotly.restyle('bio-oxygen-gauge2', {title: bioGaugeInfo["bio-oxygen-gauge2"].title})
 
 //----------------Chemreactor Gauges-----------------------//
+var chemGaugeInfo = {
+    "chem-thermo-gauge1": {
+        title: "Thermocouple",
+        value: 0,
+        setpoint: 0
+    }
+}
 Plotly.newPlot("chem-thermo-gauge1", thermo_gauge, gaugeLayout);
 Plotly.newPlot("chem-pump1-gauge1", motor_gauge, gaugeLayout);
 
-Plotly.restyle('chem-thermo-gauge1', {title: "Thermocouple"})
+Plotly.restyle('chem-thermo-gauge1', {title: chemGaugeInfo["chem-thermo-gauge1"].title})
 
 //--------------------------------------------------------------------------//
 
@@ -874,11 +1064,30 @@ function loadData() {
 
         let pyrolysis = sections[1].split(',')
         for(let x = 0; x < pyrolysis.length; x++) {
-            let id = "pyrolysis-thermo-gauge" + (x+1) + "-amount"
-            document.getElementById(id).value = pyrolysis[x]
+            //p[0] setpoint, p[1] Kp, p[2] Ki, p[3] Kd
+            let p = pyrolysis[x].split('|')
+            let id = "pyrolysis-thermo-gauge" + (x+1)
+            document.getElementById(id + "-amount").value = p[0]
+            pyrolysisGaugeInfo[id].setpoint = p[0]
+            document.getElementById(id + "-kp").value = p[1]
+            document.getElementById(id + "-ki").value = p[2]
+            document.getElementById(id + "-kd").value = p[3]
+            updatePyrolysisGauge(id)
         }
 
-        let bio = sections[2].split(',')
+        let bioPh = sections[2].split(',')
+        for(let x = 0; x < bioPh.length; x++) {
+            let b = bioPh[x].split('|')
+            let id = "bio-ph-gauge" + (x+1)
+            document.getElementById(id + "-amount").value = b[0]
+            bioGaugeInfo[id].setpoint = b[0]
+            document.getElementById(id + "-kp").value = b[1]
+            document.getElementById(id + "-ki").value = b[2]
+            document.getElementById(id + "-kd").value = b[3]
+            updateBioPhGauge(id)
+        }
+
+        let bio = sections[3].split(',')
         document.getElementById("bio-stirring-gauge1-amount").value = bio[0]
         document.getElementById("bio-stirring-gauge2-amount").value = bio[6]
         Plotly.restyle('bio-stirring-gauge1', {title: motorGaugeInfo["bio-stirring-gauge1"].title, value: bio[0]})
@@ -894,8 +1103,18 @@ function loadData() {
             Plotly.restyle(id, {title: motorGaugeInfo[id].title, value: bio[x+7]})
         }
 
-        document.getElementById("chem-pump1-gauge1-amount").value = sections[3].split(',')
-        Plotly.restyle('chem-pump1-gauge1', {title: "Pump 1", value: sections[3].split(',')})
+        let chem = sections[4].split(',')
+        document.getElementById("chem-pump1-gauge1-amount").value = parseInt(chem[0])
+        Plotly.restyle('chem-pump1-gauge1', {title: "Pump 1", value: parseInt(chem[0])})
+        let chemThermo = chem[1].split('|')
+        let id = "chem-thermo-gauge1"
+        document.getElementById(id + "-amount").value = chemThermo[0]
+        chemGaugeInfo[id].setpoint = chemThermo[0]
+        document.getElementById(id + "-kp").value = chemThermo[1]
+        document.getElementById(id + "-ki").value = chemThermo[2]
+        document.getElementById(id + "-kd").value = chemThermo[3]
+        updateChemGauge(id)
+        
     })
 }
 
@@ -914,16 +1133,11 @@ if (!!window.EventSource) {
 
     source.addEventListener('pyrolysis-readings', function(e) {
         var pyrolysisVals = e.data.split(',')
-
-        function pickColor(val) {
-            if      (val < 100){return "yellow"}
-            else if (val > 300){return "red"}
-            else               {return "green"}
-        }
         
         let ids = Object.keys(pyrolysisGaugeInfo)
         ids.forEach((id) => {
-            Plotly.restyle(id, {value: pyrolysisVals[ids.indexOf(id)+1], title: pyrolysisGaugeInfo[id].title, 'gauge.bar.color': pickColor(pyrolysisVals[ids.indexOf(id)+1])})
+            pyrolysisGaugeInfo[id].value = pyrolysisVals[ids.indexOf(id)+1]
+            updatePyrolysisGauge(id)
         })
         
         //plot values
@@ -957,8 +1171,17 @@ if (!!window.EventSource) {
         
         let ids = Object.keys(bioGaugeInfo)
         ids.forEach((id) => {
-            Plotly.restyle(id, {value: bioVals[ids.indexOf(id)+1], title: bioGaugeInfo[id].title, 'gauge.bar.color': "blue"})
+            Plotly.update(id, {
+                value: bioVals[ids.indexOf(id)+1], 
+                title: bioGaugeInfo[id].title, 
+                'gauge.bar.color': "blue",
+            })
         })
+
+        bioGaugeInfo["bio-ph-gauge1"].value = bioVals[2]
+        bioGaugeInfo["bio-ph-gauge2"].value = bioVals[5]
+        updateBioPhGauge("bio-ph-gauge1")
+        updateBioPhGauge("bio-ph-gauge2")
 
         //plot values
         if(logging) {
@@ -980,7 +1203,12 @@ if (!!window.EventSource) {
     source.addEventListener('chemreactor-readings', function(e) {
         var chemVals = e.data.split(',')
 
-        Plotly.restyle('chem-thermo-gauge1', {value: chemVals[1], title: 'Thermocouple 1', 'gauge.bar.color': "blue"})
+        let ids = Object.keys(chemGaugeInfo)
+        ids.forEach((id) => {
+            chemGaugeInfo[id].value = chemVals[ids.indexOf(id)+1]
+            updateChemGauge(id)
+        })
+        //Plotly.restyle('chem-thermo-gauge1', {value: chemVals[1], title: 'Thermocouple 1', 'gauge.bar.color': "blue"})
 
         if(logging) {
             Plotly.extendTraces('chem-thermo-graph', {
@@ -1000,6 +1228,16 @@ function setRunning() {
     } else {
         document.getElementById("run").textContent = "Start Logging Data"
         sendPOST("not logging", "not-logging")
+    }
+}
+
+function setESTOP() {
+    if(document.getElementById("estop").textContent == 'E-STOP OFF') {
+        document.getElementById("estop").textContent = 'E-STOP ON'
+        sendPOST("estop on", "estop-on")
+    } else {
+        document.getElementById("estop").textContent = 'E-STOP OFF'
+        sendPOST("estop off", "estop-off")
     }
 }
 
@@ -1035,6 +1273,88 @@ function trackData(amount, graphID) {
 
 function setGaugeValue(amount, gaugeID) {
     Plotly.update(gaugeID, {value: amount > 100 ? 100 : amount, title: motorGaugeInfo[gaugeID].title})
+}
+
+function updatePyrolysisGauge(gaugeID) {
+    let setpoint = parseInt(pyrolysisGaugeInfo[gaugeID].setpoint)
+    let value = parseInt(pyrolysisGaugeInfo[gaugeID].value)
+    function pickColor() {
+        if      (value < setpoint-50)   {return "yellow"}
+        else if (value > setpoint+50)   {return "red"}
+        else                            {return "green"}
+    }
+    let new_thermo_gauge = {
+        domain: { x: [0, 1], y: [0, 1] },
+        value: value,
+        title: { text: pyrolysisGaugeInfo[gaugeID].title },
+        type: "indicator",
+        mode: "gauge+number",
+        gauge: {
+            axis: { range: [0, setpoint*2] },
+            bar: { color: pickColor() },
+            steps: [
+                { range: [0, setpoint*2], color: "#dddddd" },
+                { range: [setpoint-55, setpoint-45], color: "yellow" },
+                { range: [setpoint-5, setpoint+5], color: "green" },
+                { range: [setpoint+45, setpoint+55], color: "red" }
+            ],
+        }
+    };
+    Plotly.restyle(gaugeID, new_thermo_gauge)
+}
+
+function updateChemGauge(gaugeID) {
+    let setpoint = parseInt(chemGaugeInfo[gaugeID].setpoint)
+    let value = parseInt(chemGaugeInfo[gaugeID].value)
+    function pickColor() {
+        if      (value < setpoint-50)   {return "yellow"}
+        else if (value > setpoint+50)   {return "red"}
+        else                            {return "green"}
+    }
+    let new_thermo_gauge = {
+        domain: { x: [0, 1], y: [0, 1] },
+        value: value,
+        title: { text: chemGaugeInfo[gaugeID].title },
+        type: "indicator",
+        mode: "gauge+number",
+        gauge: {
+            axis: { range: [0, setpoint*2] },
+            bar: { color: pickColor() },
+            steps: [
+                { range: [0, setpoint*2], color: "#dddddd" },
+                { range: [setpoint-55, setpoint-45], color: "yellow" },
+                { range: [setpoint-5, setpoint+5], color: "green" },
+                { range: [setpoint+45, setpoint+55], color: "red" }
+            ],
+        }
+    };
+    Plotly.restyle(gaugeID, new_thermo_gauge)
+}
+
+function updateBioPhGauge(gaugeID) {
+    let setpoint = parseInt(bioGaugeInfo[gaugeID].setpoint)
+    let value = parseInt(bioGaugeInfo[gaugeID].value)
+    
+    let new_ph_gauge = {
+        domain: { x: [0, 1], y: [0, 1] },
+        value: value,
+        title: { text: bioGaugeInfo[gaugeID].title },
+        type: "indicator",
+        mode: "gauge+number",
+        gauge: {
+            axis: { range: [null, 14] },
+            bar: { color: "blue" },
+            steps: [
+                { range: [0, 14], color: "#dddddd" },
+            ],
+            threshold: {
+                line: { color: "red", width: 4 },
+                thickness: 0.75,
+                value: setpoint,
+            }
+        }
+    }
+    Plotly.restyle(gaugeID, new_ph_gauge)
 }
 </script>
 

@@ -27,18 +27,29 @@ bool logging = false; //logging data to SD card and graphs
 
 //slice data variables
 #define PYROLYSIS_NUM_DATA 6
-uint16_t pyrolysisData[PYROLYSIS_NUM_DATA];
+uint16_t pyrolysisValue[PYROLYSIS_NUM_DATA];
 float pyrolysisSetpoint[PYROLYSIS_NUM_DATA];
+float pyrolysisKP[PYROLYSIS_NUM_DATA];
+float pyrolysisKI[PYROLYSIS_NUM_DATA];
+float pyrolysisKD[PYROLYSIS_NUM_DATA];
 
 #define BIO_NUM_DATA 2
 #define BIO_NUM_PUMPS 12
 float bioThermoData[BIO_NUM_DATA];
 float bioPHData[BIO_NUM_DATA];
 float bioOxygenData[BIO_NUM_DATA];
+float bioPHSetpoint[BIO_NUM_DATA];
+float bioPHKP[BIO_NUM_DATA];
+float bioPHKI[BIO_NUM_DATA];
+float bioPHKD[BIO_NUM_DATA];
 float bioPumpSetpoint[BIO_NUM_PUMPS];
 
-float chemThermoData;
 float chemPumpSetpoint;
+float chemThermoValue;
+float chemThermoSetpoint;
+float chemThermoKP;
+float chemThermoKI;
+float chemThermoKD;
 
 void initSDCard(){
   pinMode(SD_CS, OUTPUT);      
@@ -114,11 +125,75 @@ void setup() {
       String postName = p->name().c_str();
       String postValue = p->value().c_str();
       if(postName.charAt(0) == 'p') {
-        pyrolysisSetpoint[postName.substring(1).toInt() - 1] = postValue.toFloat();
+        uint8_t index = postName.substring(2).toInt() - 1;
+        switch(postName.charAt(1)) {
+          case 's': //setpoint
+            pyrolysisSetpoint[index] = postValue.toFloat();
+            //send command to BREAD here:
+            break;
+          case 'p': //Kp
+            pyrolysisKP[index] = postValue.toFloat();
+            //send command to BREAD here:
+            break;
+          case 'i': //Ki
+            pyrolysisKI[index] = postValue.toFloat();
+            //send command to BREAD here:
+            break;
+          case 'd': //Kd
+            pyrolysisKD[index] = postValue.toFloat();
+            //send command to BREAD here:
+            break;
+        }
+        //commandData[0] = 'H'
+        //commandData[1] = (either 1 or 2)
+        //float converted into 4 bytes
       } else if(postName.charAt(0) == 'b') {
-        bioPumpSetpoint[postName.substring(1).toInt() - 1] = postValue.toFloat();
+        uint8_t index = postName.substring(2).toInt() - 1;
+        switch(postName.charAt(1)) {
+          case 's': //setpoint
+            bioPHSetpoint[index] = postValue.toFloat();
+            //send command to BREAD here:
+            break;
+          case 'p': //Kp
+            bioPHKD[index] = postValue.toFloat();
+            //send command to BREAD here:
+            break;
+          case 'i': //Ki
+            bioPHKI[index] = postValue.toFloat();
+            //send command to BREAD here:
+            break;
+          case 'd': //Kd
+            bioPHKD[index] = postValue.toFloat();
+            //send command to BREAD here:
+            break;
+          case 'm':
+            bioPumpSetpoint[index] = postValue.toFloat();
+            //send command to BREAD here:
+            break;
+        }
       } else if(postName.charAt(0) == 'c') {
-        chemPumpSetpoint = postValue.toFloat();
+        switch(postName.charAt(1)) {
+          case 's': //setpoint
+            chemThermoSetpoint = postValue.toFloat();
+            //send command to BREAD here:
+            break;
+          case 'p': //Kp
+            chemThermoKP = postValue.toFloat();
+            //send command to BREAD here:
+            break;
+          case 'i': //Ki
+            chemThermoKI = postValue.toFloat();
+            //send command to BREAD here:
+            break;
+          case 'd': //Kd
+            chemThermoKD = postValue.toFloat();
+            //send command to BREAD here:
+            break;
+          case 'm':
+            chemPumpSetpoint = postValue.toFloat();
+            //send command to BREAD here:
+            break;
+        }
       }
     }
   });
@@ -148,7 +223,7 @@ void setup() {
       timeDate[5] = s.toInt();
       rtc.setTime(timeDate[0], timeDate[1], timeDate[2], timeDate[3], timeDate[4], timeDate[5]);
 
-
+      //how variables are sent to the server (I should probably use a more structured format like JSON)
       String toServer = "";
       if(logging) {
         toServer += "logging-";
@@ -157,7 +232,23 @@ void setup() {
       }
            
       for(uint8_t x = 0; x < PYROLYSIS_NUM_DATA; x++) {
-        toServer += String(pyrolysisSetpoint[x]) + ",";
+        toServer += (
+          String(pyrolysisSetpoint[x]) + "|" + 
+          String(pyrolysisKP[x]) + "|" + 
+          String(pyrolysisKI[x]) + "|" + 
+          String(pyrolysisKD[x]) + ","
+        );
+      }
+      toServer.remove(toServer.length()-1);
+      toServer += '-';
+
+      for(uint8_t x = 0; x < BIO_NUM_DATA; x++) {
+        toServer += (
+          String(bioPHSetpoint[x]) + "|" +
+          String(bioPHKP[x]) + "|" +
+          String(bioPHKI[x]) + "|" +
+          String(bioPHKD[x]) + ","
+        );
       }
       toServer.remove(toServer.length()-1);
       toServer += '-';
@@ -168,7 +259,8 @@ void setup() {
       toServer.remove(toServer.length()-1);
       toServer += '-';
 
-      toServer += String(chemPumpSetpoint);
+      toServer += String(chemPumpSetpoint) + ",";
+      toServer += String(chemThermoSetpoint) + "|" + String(chemThermoKP) + "|" + String(chemThermoKI) + "|" + String(chemThermoKD);
       
       request->send(200, "text/plain", toServer);
     } else if(request->url() == "/logging") {
@@ -177,6 +269,12 @@ void setup() {
     } else if(request->url() == "/not-logging") {
       Serial.println("stop log to SD card");
       logging = false;
+    } else if(request->url() == "/estop-on") {
+      Serial.println("estop on");
+      //set pin 12 high
+    } else if(request->url() == "/estop-off") {
+      Serial.println("estop off");
+      //set pin 12 low
     }
   });
 
@@ -207,7 +305,7 @@ void loop() {
     
     //Pyrolysis data
     for(uint8_t n = 0; n < PYROLYSIS_NUM_DATA; n++) { //receive data from BREAD (currently random numbers)
-      pyrolysisData[n] = random(400);
+      pyrolysisValue[n] = random(400);
     }
 
     //Bioreactor data
@@ -218,16 +316,16 @@ void loop() {
     }
 
     //Chemreactor data
-    chemThermoData = random(400);
+    chemThermoValue = random(400);
 
     //convert to data to string to save to SD card and send to server
     for(uint8_t n = 0; n < PYROLYSIS_NUM_DATA; n++) {
-      pyrolysisToServer += "," + String(pyrolysisData[n]);
+      pyrolysisToServer += "," + String(pyrolysisValue[n]);
     }
     for(uint8_t n = 0; n < BIO_NUM_DATA; n++) {
       bioToServer += "," + String(bioThermoData[n]) + "," + String(bioPHData[n]) + "," + String(bioOxygenData[n]);
     }
-    chemToServer += "," + String(chemThermoData);
+    chemToServer += "," + String(chemThermoValue);
 
     //send data to website
     events.send(pyrolysisToServer.c_str(), "pyrolysis-readings", millis());
