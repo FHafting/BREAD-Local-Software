@@ -241,7 +241,7 @@
                     <input type="number" step="0.01" name="bi2" id="bio-ph-gauge2-ki">
                     <br>
                     <label>Kd:</label>
-                    <input type="number" step="0.01" name="bi2" id="bio-ph-gauge2-kd">
+                    <input type="number" step="0.01" name="bd2" id="bio-ph-gauge2-kd">
                     <br>
                     <button onclick="">Push Data</button>
                 </form>
@@ -391,14 +391,21 @@ var pyrolysis_traces = [
         x: [],
         type: 'scatter',
         mode: "lines",
-        name: "Dissolution Tank"
+        name: "Condenser 1"
     },
     {
         y: [],
         x: [],
         type: 'scatter',
         mode: "lines",
-        name: "Valve"
+        name: "Condenser 2"
+    },
+    {
+        y: [],
+        x: [],
+        type: 'scatter',
+        mode: "lines",
+        name: "Condenser 0"
     },
     {
         y: [],
@@ -412,21 +419,14 @@ var pyrolysis_traces = [
         x: [],
         type: 'scatter',
         mode: "lines",
-        name: "Pyrolysis Reactor"
+        name: "Dissolution Tank"
     },
     {
         y: [],
         x: [],
         type: 'scatter',
         mode: "lines",
-        name: "Condenser 1"
-    },
-    {
-        y: [],
-        x: [],
-        type: 'scatter',
-        mode: "lines",
-        name: "Condenser 2"
+        name: "Valve"
     },
 ]
 
@@ -765,7 +765,8 @@ var pH_gauge = [{
     title: { text: "" },
     type: "indicator",
     mode: "gauge+number",
-    delta: { reference: 7 },
+    delta: { reference: 7},
+    number: {'valueformat':'f'},
     gauge: {
         axis: { range: [null, 14] },
         bar: { color: "green" },
@@ -817,32 +818,32 @@ var motor_gauge = [{
 //----------------Pyrolysis Gauges-----------------------//
 var pyrolysisGaugeInfo = {
     "pyrolysis-thermo-gauge1": {
-        title: "Dissolution Tank",
-        setpoint: 200,
-        value: 0,
-    },
-    "pyrolysis-thermo-gauge2": {
-        title: "Valve",
-        setpoint: 200,
-        value: 0,
-    },
-    "pyrolysis-thermo-gauge3": {
-        title: "Char Chamber",
-        setpoint: 200,
-        value: 0,
-    },
-    "pyrolysis-thermo-gauge4": {
-        title: "Pyrolysis Reactor",
-        setpoint: 200,
-        value: 0,
-    },
-    "pyrolysis-thermo-gauge5": {
         title: "Condenser 1",
         setpoint: 200,
         value: 0,
     },
-    "pyrolysis-thermo-gauge6": {
+    "pyrolysis-thermo-gauge2": {
         title: "Condenser 2",
+        setpoint: 200,
+        value: 0,
+    },
+    "pyrolysis-thermo-gauge3": {
+        title: "Condenser 0",
+        setpoint: 200,
+        value: 0,
+    },
+    "pyrolysis-thermo-gauge4": {
+        title: "Char Chamber",
+        setpoint: 200,
+        value: 0,
+    },
+    "pyrolysis-thermo-gauge5": {
+        title: "Dissolution Tank",
+        setpoint: 200,
+        value: 0,
+    },
+    "pyrolysis-thermo-gauge6": {
+        title: "Valve",
         setpoint: 200,
         value: 0,
     },
@@ -898,16 +899,16 @@ var motorGaugeInfo = {
         title: "Stirring Motor 1",
     },
     "bio-pump1-gauge1": {
-        title: "Pump 1-1",
+        title: "Sampling Pump 1",
     },
     "bio-pump2-gauge1": {
-        title: "Pump 1-2",
+        title: "Media Pump 1",
     },
     "bio-pump3-gauge1": {
-        title: "Pump 1-3",
+        title: "Acid Pump 1",
     },
     "bio-pump4-gauge1": {
-        title: "Pump 1-4",
+        title: "Base Pump 1",
     },
     "bio-pump5-gauge1": {
         title: "Pump 1-5",
@@ -916,16 +917,16 @@ var motorGaugeInfo = {
         title: "Stirring Motor 2",
     },
     "bio-pump1-gauge2": {
-        title: "Pump 2-1",
+        title: "Sampling Pump 2",
     },
     "bio-pump2-gauge2": {
-        title: "Pump 2-2",
+        title: "Media Pump 2",
     },
     "bio-pump3-gauge2": {
-        title: "Pump 2-3",
+        title: "Acid Pump 2",
     },
     "bio-pump4-gauge2": {
-        title: "Pump 2-4",
+        title: "Base Pump 2",
     },
     "bio-pump5-gauge2": {
         title: "Pump 2-5",
