@@ -186,6 +186,22 @@ void appendFile(fs::FS &fs, const char * path, String message){
   file.close();
 }
 
+void writeFile(fs::FS &fs, const char * path, const char * message){
+  Serial.printf("Writing file: %s\n", path);
+
+  File file = fs.open(path, FILE_WRITE);
+  if(!file){
+    Serial.println("Failed to open file for writing");
+    return;
+  }
+  if(file.print(message)){
+    Serial.println("File written");
+  } else {
+    Serial.println("Write failed");
+  }
+  file.close();
+}
+
 uint32_t lastPOST;
 
 void setup() {
@@ -412,6 +428,12 @@ void setup() {
     } if(request->url() == "/estop-off") {
       Serial.println("estop off");
       digitalWrite(ESTOP, LOW);
+    } else if(request->url() == "/delete-pyrolysis") {
+      writeFile(SD, "/pyrolysis-data.csv", "Date and Time,Condenser 1,Condenser 2,Condenser 0,Char Chamber,Dissolution Tank,Valve");
+    } else if(request->url() == "/delete-bioreactor") {
+      writeFile(SD, "/bioreactor-data.csv", "Date and Time,Thermocouple 1,pH Sensor 1,Dissolved Oxygen 1,Thermocouple 2, pH Sensor 2, Dissolved Oxygen 2");
+    } else if(request->url() == "/delete-chemreactor") {
+      writeFile(SD, "/chemreactor-data.csv", "Date and Time,Thermocouple");
     }
   });
 

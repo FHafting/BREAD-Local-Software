@@ -12,19 +12,19 @@
         <button id="estop" onclick="setESTOP()" style="color: white; background-color: red;">E-STOP OFF</button>
         <div style="display: flex; flex-direction: column;">
             <button id="download-pyrolysis" onclick="downloadCSVFile('pyrolysis-data.csv', 'pyrolysis-data.csv')">Download Pyrolysis Data</button>
-            <button id="delete-pyrolysis" ondblclick="confirmClear('delete-pyrolysis')">Clear All Pyrolysis Data</button>
+            <button id="delete-pyrolysis" ondblclick="clearPyrolysis()">Clear All Pyrolysis Data</button>
         </div>
         <div style="display: flex; flex-direction: column;">
             <button id="download-bio" onclick="downloadCSVFile('bioreactor-data.csv', 'bioreactor-data.csv')">Download Bioreactor Data</button>
-            <button id="delete-bio" ondblclick="confirmClear('delete-bioreactor')">Clear All Bioreactor Data</button>
+            <button id="delete-bio" ondblclick="clearBioreactor()">Clear All Bioreactor Data</button>
         </div>
         <div style="display: flex; flex-direction: column;">
             <button id="download-chem" onclick="downloadCSVFile('chemreactor-data.csv', 'chemreactor-data.csv')">Download Chemreactor Data</button>
-            <button id="delete-chem" ondblclick="confirmClear('delete-chemreactor')">Clear All Chemreactor Data</button>
+            <button id="delete-chem" ondblclick="clearChemreactor()">Clear All Chemreactor Data</button>
         </div>
         <div style="display: flex">
             <p style="margin: 0; margin-left: 50px; margin-right: 10px">Connection to ESP32: </p>
-            <div style="height: 18px; width: 18px; background-color: green; border-radius: 50%"></div>
+            <div id="connection" style="height: 18px; width: 18px; background-color: red; border-radius: 50%"></div>
         </div>
     </div>
     
@@ -1122,11 +1122,13 @@ if (!!window.EventSource) {
 
     source.addEventListener('open', function(e) {
         console.log("Events Connected");
+        document.getElementById("connection").style.backgroundColor = "green"; // Change this to the desired color when connected
     }, false);
 
     source.addEventListener('error', function(e) {
         if (e.target.readyState != EventSource.OPEN) {
             console.log("Events Disconnected");
+            document.getElementById("connection").style.backgroundColor = "red"; // Change this to the desired color when disconnected
         }
     }, false);
 
@@ -1355,6 +1357,7 @@ function updateBioPhGauge(gaugeID) {
     }
     Plotly.restyle(gaugeID, new_ph_gauge)
 }
+
 function downloadCSVFile(url, filename) {
     // Create a hidden anchor element
     const anchor = document.createElement('a');
@@ -1374,10 +1377,38 @@ function downloadCSVFile(url, filename) {
     document.body.removeChild(anchor);
 }
 
-var timeoutId; // Variable to store timeout ID
-function confirmClear(message) {
-    console.log('clear')
-    //sendPOST(message, message)
+function clearPyrolysis() {
+    sendPOST('delete-pyrolysis', 'delete-pyrolysis')
+
+    for(let x = 0; x < pyrolysis_traces.length; x++) {
+        pyrolysis_traces[x].x = []    //data[0] pushes time to the x axis
+        pyrolysis_traces[x].y = []   //data[x+1] to avoid pushing the date and time
+    }
+    Plotly.newPlot('pyrolysis-thermo-graph', pyrolysis_traces, thermocouple_layout, {scrollZoom: true});
+}
+
+function clearBioreactor() {
+    sendPOST('delete-bioreactor', 'delete-bioreactor')
+
+    for(let x = 0; x < 2; x++) {
+        bio_thermo_traces[x].x = []
+        bio_ph_traces[x].x = []  
+        bio_oxygen_traces[x].x = []
+        
+        bio_thermo_traces[x].y = []
+        bio_ph_traces[x].y = []
+        bio_oxygen_traces[x].y = []
+    }
+    Plotly.newPlot('bio-thermo-graph', bio_thermo_traces, bio_thermo_layout, {scrollZoom: true});                    
+    Plotly.newPlot('bio-ph-graph', bio_ph_traces, pH_layout, {scrollZoom: true});
+    Plotly.newPlot('bio-oxygen-graph', bio_oxygen_traces, oxygen_layout, {scrollZoom: true});                                       
+}
+
+function clearChemreactor() {
+    sendPOST('delete-chemreactor', 'delete-chemreactor')
+    chem_thermo_traces[0].x = []
+    chem_thermo_traces[0].y = []
+    Plotly.newPlot('chem-thermo-graph', chem_thermo_traces, chem_thermo_layout, {scrollZoom: true});
 }
 
 </script>
