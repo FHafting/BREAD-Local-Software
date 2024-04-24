@@ -22,7 +22,7 @@
             <button id="download-chem" onclick="downloadCSVFile('chemreactor-data.csv', 'chemreactor-data.csv')">Download Chemreactor Data</button>
             <button id="delete-chem" ondblclick="clearChemreactor()">Clear All Chemreactor Data</button>
         </div>
-        <button onclick="clearPyrolysis(); clearBioreactor(); clearChemreactor();">Clear All Data</button>
+        <button ondblclick="clearPyrolysis(); clearBioreactor(); clearChemreactor();">Clear All Data</button>
         <div style="display: flex">
             <p style="margin: 0; margin-left: 50px; margin-right: 10px">Connection to ESP32: </p>
             <div id="connection" style="height: 18px; width: 18px; background-color: red; border-radius: 50%"></div>
