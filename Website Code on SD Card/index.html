@@ -22,6 +22,7 @@
             <button id="download-chem" onclick="downloadCSVFile('chemreactor-data.csv', 'chemreactor-data.csv')">Download Chemreactor Data</button>
             <button id="delete-chem" ondblclick="clearChemreactor()">Clear All Chemreactor Data</button>
         </div>
+        <button onclick="clearPyrolysis(); clearBioreactor(); clearChemreactor();">Clear All Data</button>
         <div style="display: flex">
             <p style="margin: 0; margin-left: 50px; margin-right: 10px">Connection to ESP32: </p>
             <div id="connection" style="height: 18px; width: 18px; background-color: red; border-radius: 50%"></div>
@@ -1117,6 +1118,9 @@ function loadData() {
     })
 }
 
+var pUpdateCounter = 6;
+var bUpdateCounter = 6;
+var cUpdateCounter = 6;
 if (!!window.EventSource) {
     var source = new EventSource('/events');
 
@@ -1143,11 +1147,15 @@ if (!!window.EventSource) {
         
         //plot values
         if(logging) {
+            pUpdateCounter += 1
             //could use a for loop but I only want to call extendTraces once
-            Plotly.extendTraces('pyrolysis-thermo-graph', {
-                x: [[pyrolysisVals[0]],[pyrolysisVals[0]],[pyrolysisVals[0]],[pyrolysisVals[0]],[pyrolysisVals[0]],[pyrolysisVals[0]]],
-                y: [[pyrolysisVals[1]],[pyrolysisVals[2]],[pyrolysisVals[3]],[pyrolysisVals[4]],[pyrolysisVals[5]],[pyrolysisVals[6]]]
-            }, [0, 1, 2, 3, 4, 5])
+            if(pUpdateCounter >= 6) {
+                pUpdateCounter = 0
+                Plotly.extendTraces('pyrolysis-thermo-graph', {
+                    x: [[pyrolysisVals[0]],[pyrolysisVals[0]],[pyrolysisVals[0]],[pyrolysisVals[0]],[pyrolysisVals[0]],[pyrolysisVals[0]]],
+                    y: [[pyrolysisVals[1]],[pyrolysisVals[2]],[pyrolysisVals[3]],[pyrolysisVals[4]],[pyrolysisVals[5]],[pyrolysisVals[6]]]
+                }, [0, 1, 2, 3, 4, 5])
+            }
 
             if(document.getElementById('pyrolysis-tracking').textContent == 'Tracking Data...') {
                 trackData(document.getElementById('pyrolysis-tracking-amount').value, 'pyrolysis-thermo-graph')
@@ -1186,18 +1194,22 @@ if (!!window.EventSource) {
 
         //plot values
         if(logging) {
-            Plotly.extendTraces('bio-thermo-graph', {
-                x: [[bioVals[0]],[bioVals[0]]],
-                y: [[bioVals[1]],[bioVals[4]]]
-            }, [0, 1])
-            Plotly.extendTraces('bio-ph-graph', {
-                x: [[bioVals[0]],[bioVals[0]]],
-                y: [[bioVals[2]],[bioVals[5]]]
-            }, [0, 1])
-            Plotly.extendTraces('bio-oxygen-graph', {
-                x: [[bioVals[0]],[bioVals[0]]],
-                y: [[bioVals[3]],[bioVals[6]]]
-            }, [0, 1])
+            bUpdateCounter += 1
+            if(bUpdateCounter >= 6) {
+                bUpdateCounter = 0
+                Plotly.extendTraces('bio-thermo-graph', {
+                    x: [[bioVals[0]],[bioVals[0]]],
+                    y: [[bioVals[1]],[bioVals[4]]]
+                }, [0, 1])
+                Plotly.extendTraces('bio-ph-graph', {
+                    x: [[bioVals[0]],[bioVals[0]]],
+                    y: [[bioVals[2]],[bioVals[5]]]
+                }, [0, 1])
+                Plotly.extendTraces('bio-oxygen-graph', {
+                    x: [[bioVals[0]],[bioVals[0]]],
+                    y: [[bioVals[3]],[bioVals[6]]]
+                }, [0, 1])
+            }
         }
     }, false)
 
@@ -1212,10 +1224,14 @@ if (!!window.EventSource) {
         //Plotly.restyle('chem-thermo-gauge1', {value: chemVals[1], title: 'Thermocouple 1', 'gauge.bar.color': "blue"})
 
         if(logging) {
-            Plotly.extendTraces('chem-thermo-graph', {
-                x: [[chemVals[0]]],
-                y: [[chemVals[1]]]
-            }, [0])
+            cUpdateCounter += 1
+            if(cUpdateCounter >= 6) {
+                cUpdateCounter = 0
+                Plotly.extendTraces('chem-thermo-graph', {
+                    x: [[chemVals[0]]],
+                    y: [[chemVals[1]]]
+                }, [0])
+            }
         }
     }, false)
 }

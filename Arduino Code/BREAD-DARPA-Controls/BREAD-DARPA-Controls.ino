@@ -458,9 +458,11 @@ uint32_t calTime = 0;
 int calDelay = 900;
 bool readRequestedPHDO = false;
 
+uint8_t loggingCounter = 6;
 void loop() {
   //get slice data from slices
   if(millis() - lastPOST > 5000) {
+    loggingCounter += 1;
     Serial.println("getting data");
     //get time
     String timeToServer = rtc.getTime("%F %T");
@@ -511,7 +513,8 @@ void loop() {
     events.send(chemToServer.c_str(), "chemreactor-readings", millis());
     
     //log onto the SD card
-    if(logging) {
+    if(logging && loggingCounter >= 6) {  //append file to SD card after 6 updates
+      loggingCounter = 0;
       appendFile(SD, "/pyrolysis-data.csv", "\r\n" + pyrolysisToServer);
       appendFile(SD, "/bioreactor-data.csv", "\r\n" + bioToServer);
       appendFile(SD, "/chemreactor-data.csv", "\r\n" + chemToServer);
