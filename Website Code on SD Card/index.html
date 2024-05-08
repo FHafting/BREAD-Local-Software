@@ -7,8 +7,28 @@
 <body onload="loadData()">
 
     <h1>BREAD Configuration and Controls</h1>
-    <button id="run" onclick="setRunning()">Start Logging Data</button>
-    <button id="estop" onclick="setESTOP()" style="color: white; background-color: red;">E-STOP OFF</button>
+    <div style="display: flex">
+        <button id="run" onclick="setRunning()">Start Logging Data</button>
+        <button id="estop" onclick="setESTOP()" style="color: white; background-color: red;">E-STOP OFF</button>
+        <div style="display: flex; flex-direction: column;">
+            <button id="download-pyrolysis" onclick="downloadCSVFile('pyrolysis-data.csv', 'pyrolysis-data.csv')">Download Pyrolysis Data</button>
+            <button id="delete-pyrolysis" ondblclick="clearPyrolysis()">Clear All Pyrolysis Data</button>
+        </div>
+        <div style="display: flex; flex-direction: column;">
+            <button id="download-bio" onclick="downloadCSVFile('bioreactor-data.csv', 'bioreactor-data.csv')">Download Bioreactor Data</button>
+            <button id="delete-bio" ondblclick="clearBioreactor()">Clear All Bioreactor Data</button>
+        </div>
+        <div style="display: flex; flex-direction: column;">
+            <button id="download-chem" onclick="downloadCSVFile('chemreactor-data.csv', 'chemreactor-data.csv')">Download Chemreactor Data</button>
+            <button id="delete-chem" ondblclick="clearChemreactor()">Clear All Chemreactor Data</button>
+        </div>
+        <button ondblclick="clearPyrolysis(); clearBioreactor(); clearChemreactor();">Clear All Data</button>
+        <div style="display: flex">
+            <p style="margin: 0; margin-left: 50px; margin-right: 10px">Connection to ESP32: </p>
+            <div id="connection" style="height: 18px; width: 18px; background-color: red; border-radius: 50%"></div>
+        </div>
+    </div>
+    
     <iframe name="target" style="display:none;"></iframe>
     <hr>
 
@@ -697,27 +717,6 @@ var oxygen_layout = {
     },
     showlegend: true
 };
-        
-
-// let pyrolysis = sections[1].split(',')
-// for(let x = 0; x < pyrolysis.length; x++) {
-//     let id = "pyrolysis-thermo-gauge" + (x+1) + "-amount"
-//     document.getElementById(id).value = pyrolysis[x]
-// }
-
-// let bio = sections[2].split(',')
-// document.getElementById("bio-stirring-gauge1-amount").value = bio[0]
-// document.getElementById("bio-stirring-gauge2-amount").value = bio[6]
-// for(let x = 0; x < 5; x++) {
-//     let id = "bio-pump" + (x+1) + "-gauge1" + "-amount"
-//     document.getElementById(id).value = bio[x+1]
-// }
-// for(let x = 0; x < 5; x++) {
-//     let id = "bio-pump" + (x+1) + "-gauge2" +"-amount"
-//     document.getElementById(id).value = bio[x+7]
-// }
-
-// document.getElementById("chem-pump1-gauge1-amount").value = sections[3].split(',')
 
 //----------------Standard Gauge Layout-----------------------//
 var gaugeLayout = { width: 270, height: 220, margin: { t: 0, b: 0, l: 40, r: 40} };
@@ -1135,16 +1134,21 @@ function loadData() {
     })
 }
 
+var pUpdateCounter = 6;
+var bUpdateCounter = 6;
+var cUpdateCounter = 6;
 if (!!window.EventSource) {
     var source = new EventSource('/events');
 
     source.addEventListener('open', function(e) {
         console.log("Events Connected");
+        document.getElementById("connection").style.backgroundColor = "green"; // Change this to the desired color when connected
     }, false);
 
     source.addEventListener('error', function(e) {
         if (e.target.readyState != EventSource.OPEN) {
             console.log("Events Disconnected");
+            document.getElementById("connection").style.backgroundColor = "red"; // Change this to the desired color when disconnected
         }
     }, false);
 
@@ -1159,11 +1163,15 @@ if (!!window.EventSource) {
         
         //plot values
         if(logging) {
+            pUpdateCounter += 1
             //could use a for loop but I only want to call extendTraces once
-            Plotly.extendTraces('pyrolysis-thermo-graph', {
-                x: [[pyrolysisVals[0]],[pyrolysisVals[0]],[pyrolysisVals[0]],[pyrolysisVals[0]],[pyrolysisVals[0]],[pyrolysisVals[0]]],
-                y: [[pyrolysisVals[1]],[pyrolysisVals[2]],[pyrolysisVals[3]],[pyrolysisVals[4]],[pyrolysisVals[5]],[pyrolysisVals[6]]]
-            }, [0, 1, 2, 3, 4, 5])
+            if(pUpdateCounter >= 6) {
+                pUpdateCounter = 0
+                Plotly.extendTraces('pyrolysis-thermo-graph', {
+                    x: [[pyrolysisVals[0]],[pyrolysisVals[0]],[pyrolysisVals[0]],[pyrolysisVals[0]],[pyrolysisVals[0]],[pyrolysisVals[0]]],
+                    y: [[pyrolysisVals[1]],[pyrolysisVals[2]],[pyrolysisVals[3]],[pyrolysisVals[4]],[pyrolysisVals[5]],[pyrolysisVals[6]]]
+                }, [0, 1, 2, 3, 4, 5])
+            }
 
             if(document.getElementById('pyrolysis-tracking').textContent == 'Tracking Data...') {
                 trackData(document.getElementById('pyrolysis-tracking-amount').value, 'pyrolysis-thermo-graph')
@@ -1202,18 +1210,22 @@ if (!!window.EventSource) {
 
         //plot values
         if(logging) {
-            Plotly.extendTraces('bio-thermo-graph', {
-                x: [[bioVals[0]],[bioVals[0]]],
-                y: [[bioVals[1]],[bioVals[4]]]
-            }, [0, 1])
-            Plotly.extendTraces('bio-ph-graph', {
-                x: [[bioVals[0]],[bioVals[0]]],
-                y: [[bioVals[2]],[bioVals[5]]]
-            }, [0, 1])
-            Plotly.extendTraces('bio-oxygen-graph', {
-                x: [[bioVals[0]],[bioVals[0]]],
-                y: [[bioVals[3]],[bioVals[6]]]
-            }, [0, 1])
+            bUpdateCounter += 1
+            if(bUpdateCounter >= 6) {
+                bUpdateCounter = 0
+                Plotly.extendTraces('bio-thermo-graph', {
+                    x: [[bioVals[0]],[bioVals[0]]],
+                    y: [[bioVals[1]],[bioVals[4]]]
+                }, [0, 1])
+                Plotly.extendTraces('bio-ph-graph', {
+                    x: [[bioVals[0]],[bioVals[0]]],
+                    y: [[bioVals[2]],[bioVals[5]]]
+                }, [0, 1])
+                Plotly.extendTraces('bio-oxygen-graph', {
+                    x: [[bioVals[0]],[bioVals[0]]],
+                    y: [[bioVals[3]],[bioVals[6]]]
+                }, [0, 1])
+            }
         }
     }, false)
 
@@ -1228,10 +1240,14 @@ if (!!window.EventSource) {
         //Plotly.restyle('chem-thermo-gauge1', {value: chemVals[1], title: 'Thermocouple 1', 'gauge.bar.color': "blue"})
 
         if(logging) {
-            Plotly.extendTraces('chem-thermo-graph', {
-                x: [[chemVals[0]]],
-                y: [[chemVals[1]]]
-            }, [0])
+            cUpdateCounter += 1
+            if(cUpdateCounter >= 6) {
+                cUpdateCounter = 0
+                Plotly.extendTraces('chem-thermo-graph', {
+                    x: [[chemVals[0]]],
+                    y: [[chemVals[1]]]
+                }, [0])
+            }
         }
     }, false)
 }
@@ -1373,6 +1389,60 @@ function updateBioPhGauge(gaugeID) {
     }
     Plotly.restyle(gaugeID, new_ph_gauge)
 }
+
+function downloadCSVFile(url, filename) {
+    // Create a hidden anchor element
+    const anchor = document.createElement('a');
+    anchor.style.display = 'none';
+    document.body.appendChild(anchor);
+
+    // Set the href attribute of the anchor element to the CSV file URL
+    anchor.href = url;
+
+    // Set the download attribute to specify the filename
+    anchor.setAttribute('download', filename);
+
+    // Trigger a click event on the anchor element to start the download
+    anchor.click();
+
+    // Clean up by removing the anchor element
+    document.body.removeChild(anchor);
+}
+
+function clearPyrolysis() {
+    sendPOST('delete-pyrolysis', 'delete-pyrolysis')
+
+    for(let x = 0; x < pyrolysis_traces.length; x++) {
+        pyrolysis_traces[x].x = []    //data[0] pushes time to the x axis
+        pyrolysis_traces[x].y = []   //data[x+1] to avoid pushing the date and time
+    }
+    Plotly.newPlot('pyrolysis-thermo-graph', pyrolysis_traces, thermocouple_layout, {scrollZoom: true});
+}
+
+function clearBioreactor() {
+    sendPOST('delete-bioreactor', 'delete-bioreactor')
+
+    for(let x = 0; x < 2; x++) {
+        bio_thermo_traces[x].x = []
+        bio_ph_traces[x].x = []  
+        bio_oxygen_traces[x].x = []
+        
+        bio_thermo_traces[x].y = []
+        bio_ph_traces[x].y = []
+        bio_oxygen_traces[x].y = []
+    }
+    Plotly.newPlot('bio-thermo-graph', bio_thermo_traces, bio_thermo_layout, {scrollZoom: true});                    
+    Plotly.newPlot('bio-ph-graph', bio_ph_traces, pH_layout, {scrollZoom: true});
+    Plotly.newPlot('bio-oxygen-graph', bio_oxygen_traces, oxygen_layout, {scrollZoom: true});                                       
+}
+
+function clearChemreactor() {
+    sendPOST('delete-chemreactor', 'delete-chemreactor')
+    chem_thermo_traces[0].x = []
+    chem_thermo_traces[0].y = []
+    Plotly.newPlot('chem-thermo-graph', chem_thermo_traces, chem_thermo_layout, {scrollZoom: true});
+}
+
 </script>
 
 </body>

@@ -186,6 +186,22 @@ void appendFile(fs::FS &fs, const char * path, String message){
   file.close();
 }
 
+void writeFile(fs::FS &fs, const char * path, const char * message){
+  Serial.printf("Writing file: %s\n", path);
+
+  File file = fs.open(path, FILE_WRITE);
+  if(!file){
+    Serial.println("Failed to open file for writing");
+    return;
+  }
+  if(file.print(message)){
+    Serial.println("File written");
+  } else {
+    Serial.println("Write failed");
+  }
+  file.close();
+}
+
 uint32_t lastPOST;
 
 void setup() {
@@ -412,6 +428,12 @@ void setup() {
     } if(request->url() == "/estop-off") {
       Serial.println("estop off");
       digitalWrite(ESTOP, LOW);
+    } else if(request->url() == "/delete-pyrolysis") {
+      writeFile(SD, "/pyrolysis-data.csv", "Date and Time,Condenser 1,Condenser 2,Condenser 0,Char Chamber,Dissolution Tank,Valve");
+    } else if(request->url() == "/delete-bioreactor") {
+      writeFile(SD, "/bioreactor-data.csv", "Date and Time,Thermocouple 1,pH Sensor 1,Dissolved Oxygen 1,Thermocouple 2, pH Sensor 2, Dissolved Oxygen 2");
+    } else if(request->url() == "/delete-chemreactor") {
+      writeFile(SD, "/chemreactor-data.csv", "Date and Time,Thermocouple");
     }
   });
 
@@ -436,9 +458,11 @@ uint32_t calTime = 0;
 int calDelay = 900;
 bool readRequestedPHDO = false;
 
+uint8_t loggingCounter = 6;
 void loop() {
   //get slice data from slices
   if(millis() - lastPOST > 5000) {
+    loggingCounter += 1;
     Serial.println("getting data");
     //get time
     String timeToServer = rtc.getTime("%F %T");
@@ -489,7 +513,8 @@ void loop() {
     events.send(chemToServer.c_str(), "chemreactor-readings", millis());
     
     //log onto the SD card
-    if(logging) {
+    if(logging && loggingCounter >= 6) {  //append file to SD card after 6 updates
+      loggingCounter = 0;
       appendFile(SD, "/pyrolysis-data.csv", "\r\n" + pyrolysisToServer);
       appendFile(SD, "/bioreactor-data.csv", "\r\n" + bioToServer);
       appendFile(SD, "/chemreactor-data.csv", "\r\n" + chemToServer);
