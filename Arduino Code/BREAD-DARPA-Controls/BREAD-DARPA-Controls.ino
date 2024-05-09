@@ -170,6 +170,18 @@ void initSDCard(){
   Serial.printf("SD Card Size: %lluMB\n", cardSize);
 }
 
+void removeFile(fs::FS &fs, const char * path){
+  Serial.printf("Removing file: %s\n", path);
+
+  bool file = fs.remove(path);
+  if(!file){
+    Serial.println("Failed to remove file");
+    return;
+  } else {
+    Serial.println("Removed file");
+  }
+}
+
 void appendFile(fs::FS &fs, const char * path, String message){
   Serial.printf("Appending to file: %s\n", path);
 
@@ -531,23 +543,30 @@ void loop() {
 
 void RLHTRequestThermo(int address, float* t1, float* t2)
 {
+  bool data_received = false;
   byte in_char;
   char in_data[20];
   FLOATUNION_t thermo1;
   FLOATUNION_t thermo2;
+
+  thermo1.number = 0;
+  thermo2.number = 0;
   
   Wire.requestFrom(address, 8, 1);
   int i=0;
   while (Wire.available()) {                 //are there bytes to receive.
+    data_received = true;
     in_char = Wire.read();                   //receive a byte.
     in_data[i] = in_char;                    //load this byte into our array.
     i++;                                  //incur the counter for the array element.
   }
 
-  for(int x=0;x<4;x++)
-  {
-    thermo1.bytes[x] = in_data[x];
-    thermo2.bytes[x] = in_data[x+4];
+  if(data_received){
+    for(int x=0;x<4;x++)
+    {
+      thermo1.bytes[x] = in_data[x];
+      thermo2.bytes[x] = in_data[x+4];
+    }
   }
 
   *t1 = thermo1.number;
@@ -689,7 +708,10 @@ float PHDORequest(int address)
   int i=0;
   while (Wire.available()) {                 //are there bytes to receive.
     in_char = Wire.read();                   //receive a byte.
-    in_data[i] = in_char;                    //load this byte into our array.
+    if(code != 1)                            // check if incoming data is valid
+      in_data[i] = 0;                        // set values to zero if not valid data
+    else
+      in_data[i] = in_char;                    //load this byte into our array.
     i++;                                  //incur the counter for the array element.
     if (in_char == 0) {                      //if we see that we have been sent a null command.
       i = 0;                                 //reset the counter i to 0.
