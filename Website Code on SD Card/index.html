@@ -954,6 +954,21 @@ Plotly.restyle('bio-ph-gauge2', {title: bioGaugeInfo["bio-ph-gauge2"].title})
 Plotly.restyle('bio-oxygen-gauge1', {title: bioGaugeInfo["bio-oxygen-gauge1"].title})
 Plotly.restyle('bio-oxygen-gauge2', {title: bioGaugeInfo["bio-oxygen-gauge2"].title})
 
+Plotly.restyle("bio-stirring-gauge1", {title: motorGaugeInfo["bio-stirring-gauge1"].title})
+Plotly.restyle("bio-stirring-gauge2", {title: motorGaugeInfo["bio-stirring-gauge2"].title})
+
+Plotly.restyle("bio-pump1-gauge1", {title: motorGaugeInfo["bio-pump1-gauge1"].title})
+Plotly.restyle("bio-pump2-gauge1", {title: motorGaugeInfo["bio-pump2-gauge1"].title})
+Plotly.restyle("bio-pump3-gauge1", {title: motorGaugeInfo["bio-pump3-gauge1"].title})
+Plotly.restyle("bio-pump4-gauge1", {title: motorGaugeInfo["bio-pump4-gauge1"].title})
+Plotly.restyle("bio-pump5-gauge1", {title: motorGaugeInfo["bio-pump5-gauge1"].title})
+
+Plotly.restyle("bio-pump1-gauge2", {title: motorGaugeInfo["bio-pump1-gauge2"].title})
+Plotly.restyle("bio-pump2-gauge2", {title: motorGaugeInfo["bio-pump2-gauge2"].title})
+Plotly.restyle("bio-pump3-gauge2", {title: motorGaugeInfo["bio-pump3-gauge2"].title})
+Plotly.restyle("bio-pump4-gauge2", {title: motorGaugeInfo["bio-pump4-gauge2"].title})
+Plotly.restyle("bio-pump5-gauge2", {title: motorGaugeInfo["bio-pump5-gauge2"].title})
+
 //----------------Chemreactor Gauges-----------------------//
 var chemGaugeInfo = {
     "chem-thermo-gauge1": {
@@ -966,6 +981,7 @@ Plotly.newPlot("chem-thermo-gauge1", thermo_gauge, gaugeLayout);
 Plotly.newPlot("chem-pump1-gauge1", motor_gauge, gaugeLayout);
 
 Plotly.restyle('chem-thermo-gauge1', {title: chemGaugeInfo["chem-thermo-gauge1"].title})
+Plotly.restyle('chem-pump1-gauge1', {title: motorGaugeInfo["chem-pump1-gauge1"].title})
 
 //--------------------------------------------------------------------------//
 
@@ -1299,9 +1315,9 @@ function updatePyrolysisGauge(gaugeID) {
             bar: { color: pickColor() },
             steps: [
                 { range: [0, setpoint*2], color: "#dddddd" },
-                { range: [setpoint-55, setpoint-45], color: "yellow" },
-                { range: [setpoint-5, setpoint+5], color: "green" },
-                { range: [setpoint+45, setpoint+55], color: "red" }
+                { range: [setpoint*(1-0.275), setpoint*(1-0.225)], color: "yellow" },
+                { range: [setpoint-(setpoint/40), setpoint+(setpoint/40)], color: "green" },
+                { range: [setpoint*(1+0.275), setpoint*(1+0.225)], color: "red" }
             ],
         }
     };
@@ -1327,9 +1343,9 @@ function updateChemGauge(gaugeID) {
             bar: { color: pickColor() },
             steps: [
                 { range: [0, setpoint*2], color: "#dddddd" },
-                { range: [setpoint-55, setpoint-45], color: "yellow" },
-                { range: [setpoint-5, setpoint+5], color: "green" },
-                { range: [setpoint+45, setpoint+55], color: "red" }
+                { range: [setpoint*(1-0.275), setpoint*(1-0.225)], color: "yellow" },
+                { range: [setpoint-(setpoint/40), setpoint+(setpoint/40)], color: "green" },
+                { range: [setpoint*(1+0.275), setpoint*(1+0.225)], color: "red" }
             ],
         }
     };
