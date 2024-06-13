@@ -9,7 +9,7 @@ tags:
 
 authors:
   - name: Xander Chin
-    orcid: 0000-0000-0000-0000
+    orcid: 0009-0006-4689-0151
     affiliation: 1
   - name: Finn Hafting
     orcid: 0000-0003-0113-7220
