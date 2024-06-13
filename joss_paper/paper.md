@@ -30,6 +30,7 @@ bibliography: paper.bib
 # Summary
 
 New software, aptly named Butter, for the Broadly Reconfigurable and Expandable Automation Device (BREAD) [@Oberloier2023-ko] system  allows users to control BREAD wirelessly from any device without a Wi-Fi network in place. The user first connects to the local network running on an ESP32 microcontroller and then enters an IP address in their web browser to view the user interface (UI) as a webpage. By entering setpoints and controller tuning parameters, they can monitor and operate the sensors and actuators attached to their BREAD system. Butter features include:
+
 - Real-time data tracking with scrollable and resizable graphs (e.g. temperature).
 - Colour-changing gauges to quickly show real-time data and indicate values below or above desired setpoints (e.g. overheating).
 - Ability to separate BREAD controls into separate sections (e.g. pyrolysis or bioreactor).
@@ -38,6 +39,7 @@ New software, aptly named Butter, for the Broadly Reconfigurable and Expandable 
 - Ability to download/clear data directly from webpage.
 - Connection indicator to show if user is connected to ESP32.
 - Emergency stop button that immediately sets all actuators to safe state.
+
 Note that the software was created for a specific setup consisting of a pyrolysis reactor, bioreactor, and chemical deconstruction reactor; however, alternative setups can be created by copying software elements like the gauges and graphs and modifying their labels. The system was only tested on a SparkFun Thing Plus - ESP32 WROOM; however, other ESP32 development boards may also be compatible.
 
 # Statement of need
