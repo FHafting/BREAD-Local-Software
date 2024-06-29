@@ -283,6 +283,16 @@
                 <button id="bio-oxygen-tracking" onclick="setTracking('bio-oxygen-tracking', 'bio-oxygen-tracking-amount', 'bio-oxygen-graph')">Track Data</button>        
             </div>
         </div>
+        <div id="bio-turbidity" style="display: flex">
+            <div id="bio-turbidity-gauge1"></div>
+            <div id="bio-turbidity-gauge2"></div>
+            <div>
+                <div id="bio-turbidity-graph" style="height: 350px; width: 1100px;"></div>
+                <label>Number of previous seconds to track: </label>
+                <input type="number" id="bio-turbidity-tracking-amount">
+                <button id="bio-turbidity-tracking" onclick="setTracking('bio-turbidity-tracking', 'bio-turbidity-tracking-amount', 'bio-turbidity-graph')">Track Data</button>        
+            </div>
+        </div>
         <div id="bio-motors-1" style="display: flex">
             <form action="/form-submit" method="POST" target="target">
                 <div id="bio-stirring-gauge1"></div>
@@ -504,6 +514,24 @@ var bio_oxygen_traces = [
     }
 ]
 
+//----------------Bioreactor turbidity traces-----------------------//
+var bio_turbidity_traces = [
+    {
+        y: [],
+        x: [],
+        type: 'scatter',
+        mode: "lines",
+        name: "Turbidity 1"
+    },
+    {
+        y: [],
+        x: [],
+        type: 'scatter',
+        mode: "lines",
+        name: "Turbidity 2"
+    }
+]
+
 //----------------Chemreactor thermocouple traces-----------------------//
 var chem_thermo_traces = [
     {
@@ -718,6 +746,47 @@ var oxygen_layout = {
     showlegend: true
 };
 
+//----------------Turbidity graph layout-----------------------//
+var turbidity_layout = {
+    title: 'Turbidity Data',
+    xaxis: {
+        title: 'Time',
+        autorange: true,
+        rangeselector: {buttons: [
+            {
+            count: 1,
+            label: '1h',
+            step: 'hour',
+            stepmode: 'backward'
+            },
+            {
+            count: 6,
+            label: '6h',
+            step: 'hour',
+            stepmode: 'backward'
+            },
+            {
+            count: 12,
+            label: '12h',
+            step: 'hour',
+            stepmode: 'backward'
+            },
+            {
+            count: 24,
+            label: '24h',
+            step: 'hour',
+            stepmode: 'backward'
+            },
+            {step: 'all'}
+        ]},
+        type: 'date'
+    },
+    yaxis: {
+        title: 'Turbidity (NTU)'
+    },
+    showlegend: true
+};
+
 //----------------Standard Gauge Layout-----------------------//
 var gaugeLayout = { width: 270, height: 220, margin: { t: 0, b: 0, l: 40, r: 40} };
 
@@ -793,6 +862,23 @@ var oxygen_gauge = [{
         bar: { color: "green" },
         steps: [
             { range: [0, 100], color: "#dddddd" },
+        ],
+    }
+}];
+
+//----------------Turbidity Gauge-----------------------//
+var turbidity_gauge = [{
+    domain: { x: [0, 1], y: [0, 1] },
+    value: 0,
+    title: { text: "" },
+    type: "indicator",
+    mode: "gauge+number",
+    delta: { reference: 1 },
+    gauge: {
+        axis: { range: [null, 6] },
+        bar: { color: "green" },
+        steps: [
+            { range: [0, 6], color: "#dddddd" },
         ],
     }
 }];
@@ -879,6 +965,10 @@ var bioGaugeInfo = {
         title: "Dissolved Oxygen 1",
         value: 0,
     },
+    "bio-turbidity-gauge1": {
+        title: "Turbidity 1",
+        value: 0,
+    },
     "bio-thermo-gauge2": {
         title: "Thermocouple 2",
         value: 0,
@@ -890,6 +980,10 @@ var bioGaugeInfo = {
     },
     "bio-oxygen-gauge2": {
         title: "Dissolved Oxygen 2",
+        value: 0,
+    },
+    "bio-turbidity-gauge2": {
+        title: "Turbidity 2",
         value: 0,
     },
 }
@@ -944,6 +1038,9 @@ Plotly.newPlot('bio-ph-gauge2', pH_gauge, gaugeLayout);
 Plotly.newPlot('bio-oxygen-gauge1', oxygen_gauge, gaugeLayout);
 Plotly.newPlot('bio-oxygen-gauge2', oxygen_gauge, gaugeLayout);
 
+Plotly.newPlot('bio-turbidity-gauge1', turbidity_gauge, gaugeLayout);
+Plotly.newPlot('bio-turbidity-gauge2', turbidity_gauge, gaugeLayout);
+
 Plotly.newPlot("bio-stirring-gauge1", motor_gauge, gaugeLayout);
 Plotly.newPlot("bio-stirring-gauge2", motor_gauge, gaugeLayout);
 
@@ -965,6 +1062,8 @@ Plotly.restyle('bio-ph-gauge1', {title: bioGaugeInfo["bio-ph-gauge1"].title})
 Plotly.restyle('bio-ph-gauge2', {title: bioGaugeInfo["bio-ph-gauge2"].title})
 Plotly.restyle('bio-oxygen-gauge1', {title: bioGaugeInfo["bio-oxygen-gauge1"].title})
 Plotly.restyle('bio-oxygen-gauge2', {title: bioGaugeInfo["bio-oxygen-gauge2"].title})
+Plotly.restyle('bio-turbidity-gauge1', {title: bioGaugeInfo["bio-turbidity-gauge1"].title})
+Plotly.restyle('bio-turbidity-gauge2', {title: bioGaugeInfo["bio-turbidity-gauge2"].title})
 
 Plotly.restyle("bio-stirring-gauge1", {title: motorGaugeInfo["bio-stirring-gauge1"].title})
 Plotly.restyle("bio-stirring-gauge2", {title: motorGaugeInfo["bio-stirring-gauge2"].title})
@@ -1028,17 +1127,20 @@ function loadData() {
                 bio_thermo_traces[x].x.push(data[0])    //data[0] pushes time to the x axis
                 bio_ph_traces[x].x.push(data[0])        
                 bio_oxygen_traces[x].x.push(data[0])
+                bio_turbidity_traces[x].x.push(data[0])
                 
-                bio_thermo_traces[x].y.push(data[x*3+1]) 
-                bio_ph_traces[x].y.push(data[x*3+2])    
-                bio_oxygen_traces[x].y.push(data[x*3+3])  
+                bio_thermo_traces[x].y.push(data[x*4+1]) 
+                bio_ph_traces[x].y.push(data[x*4+2])    
+                bio_oxygen_traces[x].y.push(data[x*4+3]) 
+                bio_turbidity_traces[x].y.push(data[x*4+4]) 
             }
         }
 
         //Plot data
         Plotly.newPlot('bio-thermo-graph', bio_thermo_traces, bio_thermo_layout, {scrollZoom: true});                    
         Plotly.newPlot('bio-ph-graph', bio_ph_traces, pH_layout, {scrollZoom: true});
-        Plotly.newPlot('bio-oxygen-graph', bio_oxygen_traces, oxygen_layout, {scrollZoom: true});                                       
+        Plotly.newPlot('bio-oxygen-graph', bio_oxygen_traces, oxygen_layout, {scrollZoom: true});
+        Plotly.newPlot('bio-turbidity-graph', bio_turbidity_traces, turbidity_layout, {scrollZoom: true});
     })
 
     //load chemreactor data
@@ -1185,6 +1287,9 @@ if (!!window.EventSource) {
             if(document.getElementById('bio-oxygen-tracking').textContent == 'Tracking Data...') {
                 trackData(document.getElementById('bio-oxygen-tracking-amount').value, 'bio-oxygen-graph')
             }
+            if(document.getElementById('bio-turbidity-tracking').textContent == 'Tracking Data...') {
+                trackData(document.getElementById('bio-turbidity-tracking-amount').value, 'bio-turbidity-graph')
+            }
             if(document.getElementById('chem-thermo-tracking').textContent == 'Tracking Data...') {
                 trackData(document.getElementById('chem-thermo-tracking-amount').value, 'chem-thermo-graph')
             }
@@ -1204,7 +1309,7 @@ if (!!window.EventSource) {
         })
 
         bioGaugeInfo["bio-ph-gauge1"].value = bioVals[2]
-        bioGaugeInfo["bio-ph-gauge2"].value = bioVals[5]
+        bioGaugeInfo["bio-ph-gauge2"].value = bioVals[6]
         updateBioPhGauge("bio-ph-gauge1")
         updateBioPhGauge("bio-ph-gauge2")
 
@@ -1215,15 +1320,19 @@ if (!!window.EventSource) {
                 bUpdateCounter = 0
                 Plotly.extendTraces('bio-thermo-graph', {
                     x: [[bioVals[0]],[bioVals[0]]],
-                    y: [[bioVals[1]],[bioVals[4]]]
+                    y: [[bioVals[1]],[bioVals[5]]]
                 }, [0, 1])
                 Plotly.extendTraces('bio-ph-graph', {
                     x: [[bioVals[0]],[bioVals[0]]],
-                    y: [[bioVals[2]],[bioVals[5]]]
+                    y: [[bioVals[2]],[bioVals[6]]]
                 }, [0, 1])
                 Plotly.extendTraces('bio-oxygen-graph', {
                     x: [[bioVals[0]],[bioVals[0]]],
-                    y: [[bioVals[3]],[bioVals[6]]]
+                    y: [[bioVals[3]],[bioVals[7]]]
+                }, [0, 1])
+                Plotly.extendTraces('bio-turbidity-graph', {
+                    x: [[bioVals[0]],[bioVals[0]]],
+                    y: [[bioVals[4]],[bioVals[8]]]
                 }, [0, 1])
             }
         }
@@ -1426,14 +1535,17 @@ function clearBioreactor() {
         bio_thermo_traces[x].x = []
         bio_ph_traces[x].x = []  
         bio_oxygen_traces[x].x = []
-        
+        bio_turbidity_traces[x].x = []
+
         bio_thermo_traces[x].y = []
         bio_ph_traces[x].y = []
         bio_oxygen_traces[x].y = []
+        bio_turbidity_traces[x].y = []
     }
     Plotly.newPlot('bio-thermo-graph', bio_thermo_traces, bio_thermo_layout, {scrollZoom: true});                    
     Plotly.newPlot('bio-ph-graph', bio_ph_traces, pH_layout, {scrollZoom: true});
-    Plotly.newPlot('bio-oxygen-graph', bio_oxygen_traces, oxygen_layout, {scrollZoom: true});                                       
+    Plotly.newPlot('bio-oxygen-graph', bio_oxygen_traces, oxygen_layout, {scrollZoom: true});
+    Plotly.newPlot('bio-turbidity-graph', bio_turbidity_traces, turbidity_layout, {scrollZoom: true});
 }
 
 function clearChemreactor() {

@@ -109,6 +109,7 @@ float pyrolysisKD[PYROLYSIS_NUM_DATA];
 float bioThermoData[BIO_NUM_DATA];
 float bioPHData[BIO_NUM_DATA];
 float bioOxygenData[BIO_NUM_DATA];
+float bioTurbidityData[BIO_NUM_DATA];
 float bioPHSetpoint[BIO_NUM_DATA];
 float bioPHKP[BIO_NUM_DATA];
 float bioPHKI[BIO_NUM_DATA];
@@ -300,7 +301,7 @@ void setup() {
                 DCMTCommandSpeed(DCMT[3].address, 1, bioMotorSetpoint[index], 1);
                 break;
               case 1:   // sampling pump 1
-                DCMTCommandSpeed(DCMT[4].address, 1, bioMotorSetpoint[index], 1);
+                DCMTCommandSpeed(DCMT[3].address, 2, bioMotorSetpoint[index], 1);
                 break;
               case 2:   // media pump 1
                 DCMTCommandSpeed(DCMT[5].address, 1, bioMotorSetpoint[index], 1);
@@ -315,7 +316,7 @@ void setup() {
                 DCMTCommandSpeed(DCMT[6].address, 1, bioMotorSetpoint[index], 1);
                 break;
               case 6:   // stirring motor 2
-                DCMTCommandSpeed(DCMT[3].address, 2, bioMotorSetpoint[index], 1);
+                DCMTCommandSpeed(DCMT[4].address, 1, bioMotorSetpoint[index], 1);
                 break;
               case 7:   // sampling pump 2
                 DCMTCommandSpeed(DCMT[4].address, 2, bioMotorSetpoint[index], 1);
@@ -443,7 +444,7 @@ void setup() {
     } else if(request->url() == "/delete-pyrolysis") {
       writeFile(SD, "/pyrolysis-data.csv", "Date and Time,Condenser 1,Condenser 2,Condenser 0,Char Chamber,Dissolution Tank,Valve");
     } else if(request->url() == "/delete-bioreactor") {
-      writeFile(SD, "/bioreactor-data.csv", "Date and Time,Thermocouple 1,pH Sensor 1,Dissolved Oxygen 1,Thermocouple 2, pH Sensor 2, Dissolved Oxygen 2");
+      writeFile(SD, "/bioreactor-data.csv", "Date and Time,Thermocouple 1,pH Sensor 1,Dissolved Oxygen 1,Turbidity 1,Thermocouple 2, pH Sensor 2, Dissolved Oxygen 2,Turbidity 2");
     } else if(request->url() == "/delete-chemreactor") {
       writeFile(SD, "/chemreactor-data.csv", "Date and Time,Thermocouple");
     }
@@ -495,7 +496,9 @@ void loop() {
     for(uint8_t n = 0; n < BIO_NUM_DATA; n++) {
       if(!(PHDO[n].calPH) && readRequestedPHDO) bioPHData[n] = PHDORequest(PHDO[n].addressPH);
       if(!(PHDO[n].calDO) && readRequestedPHDO) bioOxygenData[n] = PHDORequest(PHDO[n].addressDO);
+      DCMTRequestTurbidity(DCMT[n+3].address, &(bioTurbidityData[n]));
     }
+    Serial.println(bioTurbidityData[0]);
     // update pH pump controller with new pH values if setpoint is nonzero
     if(bioPHSetpoint[0] != 0)
       DCMTCommandPH(DCMT[1].address, bioPHSetpoint[0], bioPHData[0]); // send pH 1 to DCMT 21
@@ -515,7 +518,7 @@ void loop() {
       pyrolysisToServer += "," + String(pyrolysisValue[n]);
     }
     for(uint8_t n = 0; n < BIO_NUM_DATA; n++) {
-      bioToServer += "," + String(bioThermoData[n]) + "," + String(bioPHData[n]) + "," + String(bioOxygenData[n]);
+      bioToServer += "," + String(bioThermoData[n]) + "," + String(bioPHData[n]) + "," + String(bioOxygenData[n] + "," + String(bioTurbidityData[n]);
     }
     chemToServer += "," + String(chemThermoValue);
 
@@ -622,6 +625,32 @@ void RLHTCommandPID(int address, byte heater, float Kp_set, float Ki_set, float 
   Serial.print(Kp.number);
   Serial.print(Ki.number);
   Serial.println(Kd.number);
+}
+
+void DCMTRequestTurbidity(int address, float* turb)
+{
+  bool data_received = false;
+  byte in_char;
+  char in_data[20];
+  FLOATUNION_t turbidity;
+
+  turbidity.number = 0;
+  
+  Wire.requestFrom(address, 8, 1);
+  int i=0;
+  while (Wire.available()) {                 //are there bytes to receive.
+    data_received = true;
+    in_char = Wire.read();                   //receive a byte.
+    in_data[i] = in_char;                    //load this byte into our array.
+    i++;                                  //incur the counter for the array element.
+  }
+
+  if(data_received){
+    for(int x=0;x<4;x++)
+      turbidity.bytes[x] = in_data[x];
+  }
+
+  *turb = turbidity.number;
 }
 
 void DCMTCommandSpeed(int address, byte motor, int speed_set, bool enable)
