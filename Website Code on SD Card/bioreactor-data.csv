@@ -1,1 +1,3 @@
-Date and Time,Thermocouple 1,pH Sensor 1,Dissolved Oxygen 1,Thermocouple 2,pH Sensor 2,Dissolved Oxygen 2
+Date and Time,Thermocouple 1,pH Sensor 1,Dissolved Oxygen 1,Turbidity 1,Thermocouple 2, pH Sensor 2, Dissolved Oxygen 2,Turbidity 2,Pasteurization,Dryer
+2024-07-11 17:35:48,0.00,10.63,27.59,0.00,0.00,0.00,0.00,0.00,0.00,0.00
+2024-07-11 17:36:16,0.00,10.57,27.59,0.00,0.00,0.00,0.00,0.00,0.00,0.00

@@ -1,10 +1,11 @@
 /* Function layouts
 Get thermocouple data:        void RLHTRequestThermo(int address, float* t1, float* t2)
-Set heating setpoint:         void RLHTCommandSetpoint(int address, byte heater, float heatSetpoint)
+Set heating setpoint:         void RLHTCommandSetpoint(int address, byte heater, float heatSetpoint, byte thermocouple, bool enableReverse)
 Set heating PID tunings:      void RLHTCommandPID(int address, byte heater, float Kp_set, float Ki_set, float Kd_set)
 Set motor speeds:             void DCMTCommandSpeed(int address, byte motor, int speed_set, bool enable)
 Set as pump with pH setpoint: void DCMTCommandPH(int address, float pHSetpoint_set, float currentPH_set)
 Set as pH PID tunings:        void DCMTCommandPHPID(int address, float Kp_set, float Ki_set, float Kd_set)
+Set as turbidity pump:        void DCMTCommandTurbidity(int address, byte motor, byte direction, bool enable, int sample_period)
 Send commands to pH & DO:     void PHDOCommand(int address, char *commandData)
 Get pH or DO readings:        float PHDORequest(int address)
 */
@@ -22,8 +23,10 @@ Get pH or DO readings:        float PHDORequest(int address)
 #include <ESP32Time.h>
 ESP32Time rtc;
 
-#define NUM_DCMT_SLICES   7
-#define NUM_RLHT_SLICES   6
+#define SLICE_DATA_INTERVAL_MS 10000
+
+#define NUM_DCMT_SLICES   8
+#define NUM_RLHT_SLICES   8
 #define NUM_PHDO_SLICES   2
 
 // microSD Card Reader connections
@@ -86,42 +89,95 @@ struct PHDO_t {
   bool calDO = false;
 };
 
-DCMT_t DCMT[7];
-RLHT_t RLHT[6];
-PHDO_t PHDO[2];
+DCMT_t DCMT[NUM_DCMT_SLICES];
+RLHT_t RLHT[NUM_RLHT_SLICES];
+PHDO_t PHDO[NUM_PHDO_SLICES];
+
+int pyro_thermo[9][2] = {   // pyrolyis thermocouple layout {address, thermocouple}
+  {16, 2}, // DT
+  {17, 1}, // DHT
+  {16, 1}, // V
+  {15, 2}, // CC
+  {15, 1}, // SR
+  {14, 1}, // KD
+  {10, 1}, // C0
+  {11, 1}, // C1
+  {12, 1}  // C2
+};
+float pyro_thermo_val[9] = {0,0,0,0,0,0,0,0,0};   // stores thermocouple values
+
+int pyro_heater[10][4] = {   // pyrolysis heater/fan layout {address, heater, thermocouple, reverseEnable}
+  {16, 2, 2, 0}, // DT
+  {16, 1, 1, 0}, // V
+  {15, 2, 2, 0}, // CC
+  {15, 1, 1, 0}, // SR
+  {14, 1, 1, 0}, // KD
+  {10, 1, 1, 0}, // C0H
+  {10, 2, 1, 1}, // C0F
+  {11, 1, 1, 0}, // C1H
+  {11, 2, 1, 1}, // C1F
+  {12, 1, 1, 1}  // C2F
+};
+float pyro_heater_pid[10][4];  // pyrolysis heater/fan PID {setpoint, Kp, Ki, Kd}
+
+int bio_thermo[2][2] = {    // bioreator thermocouples {address, thermocouple}
+  {10, 2},
+  {11, 2}
+};
+int bio_post_heaters[2][4] = {    // bioreactor post processing heaters {address, heater, thermocouple, reverseEnable}
+  {12, 2, 2, 0},    // pasteurization
+  {14, 2, 2, 0}     // dryer
+};
+float bio_post_heater_pid[2][4];  // {setpoint, Kp, Ki, Kd}
+float bio_thermo_val[4] = {0,0,0,0};
+
+int bio_ph[2][2] = {      // bioreactor pH layout {PHDO address, DCMT address}
+  {98, 20},
+  {100, 21}
+};
+float bio_ph_val[2][5];   // bioreactor pH settings (pH, Setpoint, Kp, Ki, Kd)
+
+int bio_do[2] = {97, 99}; // bioreactor DO addresses
+float bio_do_val[2] = {0,0};      // bioreactor DO values
+
+int bio_turbidity[2][4] = {   // bioreactor turbidity pump {address, motor, direction, sampleTime}
+  {22, 1, 1, 0},
+  {22, 2, 1, 0}
+};
+float bio_turbidity_val[2] = {0,0};   // bioreactor turbidity value
+
+int bio_motors[10][3] = {     // bioreactor motor config {address, motor, speed}
+  {23, 1, 0},   // stirring 1
+  {20, 1, 0},   // base 1
+  {20, 2, 0},   // acid 1
+  {24, 1, 0},   // water
+  {24, 2, 0},   // spent media
+  {23, 2, 0},   // stirring 2
+  {21, 1, 0},   // base 2
+  {21, 2, 0},   // acid 2
+  {25, 1, 0},   // harvest
+  {25, 2, 0}    // TFF
+};
+
+int chem_thermo[2][4] = {   // {address, heater, thermocouple, reverseEnable}
+  {13, 1, 1, 0},    // reactor 1
+  {13, 2, 2, 0}     // reactor 2
+};
+float chem_thermo_val[2] = {0,0};
+float chem_heater_pid[2][4];
+
+int chem_motors[4][3] = {
+  {26, 1, 0},   // ammonium hydroxide
+  {26, 2, 0},   // liquid transfer
+  {27, 1, 0},   // water dilute
+  {27, 2, 0}    // reactor wash
+};
 
 AsyncWebServer server(80);
 
 AsyncEventSource events("/events");
 
 bool logging = false; //logging data to SD card and graphs
-
-//slice data variables
-#define PYROLYSIS_NUM_DATA 6
-float pyrolysisValue[PYROLYSIS_NUM_DATA];
-float pyrolysisSetpoint[PYROLYSIS_NUM_DATA];
-float pyrolysisKP[PYROLYSIS_NUM_DATA];
-float pyrolysisKI[PYROLYSIS_NUM_DATA];
-float pyrolysisKD[PYROLYSIS_NUM_DATA];
-
-#define BIO_NUM_DATA 2
-#define BIO_NUM_MOTORS 12
-float bioThermoData[BIO_NUM_DATA];
-float bioPHData[BIO_NUM_DATA];
-float bioOxygenData[BIO_NUM_DATA];
-float bioTurbidityData[BIO_NUM_DATA];
-float bioPHSetpoint[BIO_NUM_DATA];
-float bioPHKP[BIO_NUM_DATA];
-float bioPHKI[BIO_NUM_DATA];
-float bioPHKD[BIO_NUM_DATA];
-float bioMotorSetpoint[BIO_NUM_MOTORS];
-
-float chemPumpSetpoint;
-float chemThermoValue;
-float chemThermoSetpoint;
-float chemThermoKP;
-float chemThermoKI;
-float chemThermoKD;
 
 void initSlices(){
   // DCMT Slice address assignment
@@ -241,6 +297,30 @@ void setup() {
   });
 
   //load data from slice form
+
+/*
+Pyrolysis Commands:
+  ps1:  pyrolysis setpoint 1
+  pp1:  pyrolysis Kp 1
+  pi1:  pyrolysis Ki 1
+  pd1:  pyrolysis Kd 1
+
+Bioreactor Commands:
+  bs1:  bioreactor setpoint 1
+  bp1:  bioreactor Kp 1
+  bi1:  bioreactor Ki 1
+  bd1:  bioreactor Kd 1
+  bm1:  bioreactor motor 1
+  bt1:  bioreactor turbidity sample time 1
+
+Chem Decon Commands:
+  cm1:  chemreactor motor 1 (pump)
+  cs1:  chemreactor setpoint 1
+  cp1:  chemreactor Kp 1
+  ci1:  chemreactor Ki 1
+  cd1:  chemreactor Kd 1
+*/
+
   server.on("/form-submit", HTTP_POST, [](AsyncWebServerRequest * request) {
     int params = request->params();
     for (int i = 0; i < params; i++) {
@@ -248,116 +328,98 @@ void setup() {
       Serial.printf("POST[%s]: %s\n", p->name().c_str(), p->value().c_str());
       String postName = p->name().c_str();
       String postValue = p->value().c_str();
-      if(postName.charAt(0) == 'p') {
-        uint8_t index = postName.substring(2).toInt() - 1;
+      uint8_t index = postName.substring(2).toInt() - 1;
+
+      if(postName.charAt(0) == 'p') {   // pyrolysis reactor
         switch(postName.charAt(1)) {
           case 's': //setpoint
-            pyrolysisSetpoint[index] = postValue.toFloat();
-            if(index%2 == 0)  // even index
-              RLHTCommandSetpoint(RLHT[(index/2)+1].address, 1, pyrolysisSetpoint[index]);
-            else    // odd index
-              RLHTCommandSetpoint(RLHT[(index/2)+1].address, 2, pyrolysisSetpoint[index]);
+            pyro_heater_pid[index][0] = postValue.toFloat();
+            RLHTCommandSetpoint(pyro_heater[index][0], pyro_heater[index][1], pyro_heater_pid[index][0], pyro_heater[index][2], pyro_heater[index][3]);
             break;
           case 'p': //Kp
-            pyrolysisKP[index] = postValue.toFloat();
+            pyro_heater_pid[index][1] = postValue.toFloat();
             break;
           case 'i': //Ki
-            pyrolysisKI[index] = postValue.toFloat();
+            pyro_heater_pid[index][2] = postValue.toFloat();
             break;
           case 'd': //Kd
-            pyrolysisKD[index] = postValue.toFloat();
-            if(index%2 == 0){  // even index
-              RLHTCommandPID(RLHT[(index/2)+1].address, 1, pyrolysisKP[index], pyrolysisKI[index], pyrolysisKD[index]);
-            }else{    // odd index
-              RLHTCommandPID(RLHT[(index/2)+1].address, 2, pyrolysisKP[index], pyrolysisKI[index], pyrolysisKD[index]);
-            }
+            pyro_heater_pid[index][3] = postValue.toFloat();
+            RLHTCommandPID(pyro_heater[index][0], pyro_heater[index][1], pyro_heater_pid[index][1], pyro_heater_pid[index][2], pyro_heater_pid[index][3]);
             break;
         }
         //float converted into 4 bytes
-      } else if(postName.charAt(0) == 'b') {
+      }else if(postName.charAt(0) == 'b') {
         uint8_t index = postName.substring(2).toInt() - 1;
         switch(postName.charAt(1)) {
           case 's': //setpoint
-            bioPHSetpoint[index] = postValue.toFloat();
-            DCMTCommandPH(DCMT[index+1].address, bioPHSetpoint[index], bioPHData[index]); // send pH 1 to DCMT 21 and pH 2 to DCMT 22
+            bio_ph_val[index][1] = postValue.toFloat();
+            DCMTCommandPH(bio_ph[index][1], bio_ph_val[index][1], bio_ph_val[index][0]);
             break;
           case 'p': //Kp
-            bioPHKP[index] = postValue.toFloat();
+            bio_ph_val[index][2] = postValue.toFloat();
             //send command to BREAD here:
             break;
           case 'i': //Ki
-            bioPHKI[index] = postValue.toFloat();
+            bio_ph_val[index][3] = postValue.toFloat();
             //send command to BREAD here:
             break;
           case 'd': //Kd
-            bioPHKD[index] = postValue.toFloat();
+            bio_ph_val[index][2] = postValue.toFloat();
             Serial.println("Sending pH PID");
-            DCMTCommandPHPID(DCMT[index+1].address, bioPHKP[index], bioPHKI[index], bioPHKD[index]); // pH PID 1 to DCMT 21, pH PID 2 to DCMT 22
+            DCMTCommandPHPID(bio_ph[index][1], bio_ph_val[index][2], bio_ph_val[index][3], bio_ph_val[index][4]);
             break;
           case 'm':
-            bioMotorSetpoint[index] = postValue.toFloat();
-            switch(index){
-              case 0:   // stirring motor 1
-                DCMTCommandSpeed(DCMT[3].address, 1, bioMotorSetpoint[index], 1);
-                break;
-              case 1:   // sampling pump 1
-                DCMTCommandSpeed(DCMT[3].address, 2, bioMotorSetpoint[index], 1);
-                break;
-              case 2:   // media pump 1
-                DCMTCommandSpeed(DCMT[5].address, 1, bioMotorSetpoint[index], 1);
-                break;
-              case 3:   // acid pump 1
-                DCMTCommandSpeed(DCMT[1].address, 1, bioMotorSetpoint[index], 1);
-                break;
-              case 4:   // base pump 1
-                DCMTCommandSpeed(DCMT[1].address, 2, bioMotorSetpoint[index], 1);
-                break;
-              case 5:   // extra pump 1
-                DCMTCommandSpeed(DCMT[6].address, 1, bioMotorSetpoint[index], 1);
-                break;
-              case 6:   // stirring motor 2
-                DCMTCommandSpeed(DCMT[4].address, 1, bioMotorSetpoint[index], 1);
-                break;
-              case 7:   // sampling pump 2
-                DCMTCommandSpeed(DCMT[4].address, 2, bioMotorSetpoint[index], 1);
-                break;
-              case 8:   // media pump 2
-                DCMTCommandSpeed(DCMT[5].address, 2, bioMotorSetpoint[index], 1);
-                break;
-              case 9:   // acid pump 2
-                DCMTCommandSpeed(DCMT[2].address, 1, bioMotorSetpoint[index], 1);
-                break;
-              case 10:   // base pump 2
-                DCMTCommandSpeed(DCMT[2].address, 2, bioMotorSetpoint[index], 1);
-                break;
-              case 11:   // extra pump 2
-                DCMTCommandSpeed(DCMT[6].address, 2, bioMotorSetpoint[index], 1);
-                break;
-            }
+            bio_motors[index][2] = postValue.toInt();
+            DCMTCommandSpeed(bio_motors[index][0], bio_motors[index][1], bio_motors[index][2], 1);
+            break;
+          case 't':
+            bio_turbidity[index][3] = postValue.toInt();  // sample time
+            DCMTCommandTurbidity(bio_turbidity[index][0], bio_turbidity[index][1], bio_turbidity[index][2], 1, bio_turbidity[index][3]);
             break;
         }
       } else if(postName.charAt(0) == 'c') {
         switch(postName.charAt(1)) {
           case 's': //setpoint
-            chemThermoSetpoint = postValue.toFloat();
-            RLHTCommandSetpoint(RLHT[5].address, 1, chemThermoSetpoint);
+            chem_heater_pid[index][0] = postValue.toFloat();
+            RLHTCommandSetpoint(chem_thermo[index][0], chem_thermo[index][1], chem_heater_pid[index][0], chem_thermo[index][2], chem_thermo[index][3]);
             //send command to BREAD here:
             break;
           case 'p': //Kp
-            chemThermoKP = postValue.toFloat();
+            chem_heater_pid[index][1] = postValue.toFloat();
             //send command to BREAD here:
             break;
           case 'i': //Ki
-            chemThermoKI = postValue.toFloat();
+            chem_heater_pid[index][2] = postValue.toFloat();
             //send command to BREAD here:
             break;
           case 'd': //Kd
-            chemThermoKD = postValue.toFloat();
-            RLHTCommandPID(RLHT[5].address, 1, chemThermoKP, chemThermoKI, chemThermoKD);
+            chem_heater_pid[index][3] = postValue.toFloat();
+            RLHTCommandPID(chem_thermo[index][0], chem_thermo[index][1], chem_heater_pid[index][1], chem_heater_pid[index][2], chem_heater_pid[index][3]);
             break;
           case 'm':
-            chemPumpSetpoint = postValue.toFloat();
-            DCMTCommandSpeed(DCMT[0].address, 1, chemPumpSetpoint, 1);
+            chem_motors[index][2] = postValue.toInt();
+            DCMTCommandSpeed(chem_motors[index][0], chem_motors[index][1], chem_motors[index][2], 1);
+            break;
+        }
+      }else if(postName.charAt(0) == 'P') {   // bioreactor post processing
+        uint8_t index = postName.substring(2).toInt() - 1;
+        switch(postName.charAt(1)) {
+          case 's': //setpoint
+            bio_post_heater_pid[index][0] = postValue.toFloat();
+            RLHTCommandSetpoint(bio_post_heaters[index][0], bio_post_heaters[index][1], bio_post_heater_pid[index][0], bio_post_heaters[index][2], bio_post_heaters[index][3]);
+            break;
+          case 'p': //Kp
+            bio_post_heater_pid[index][1] = postValue.toFloat();
+            //send command to BREAD here:
+            break;
+          case 'i': //Ki
+            bio_post_heater_pid[index][2] = postValue.toFloat();
+            //send command to BREAD here:
+            break;
+          case 'd': //Kd
+            bio_post_heater_pid[index][3] = postValue.toFloat();
+            Serial.println("Sending pH PID");
+            RLHTCommandPID(bio_post_heaters[index][0], bio_post_heaters[index][1], bio_post_heater_pid[index][1], bio_post_heater_pid[index][2], bio_post_heater_pid[index][3]);
             break;
         }
       }
@@ -397,36 +459,62 @@ void setup() {
         toServer += "not logging-";
       }
            
-      for(uint8_t x = 0; x < PYROLYSIS_NUM_DATA; x++) {
+      for(uint8_t x = 0; x < 10; x++) {
         toServer += (
-          String(pyrolysisSetpoint[x]) + "|" + 
-          String(pyrolysisKP[x]) + "|" + 
-          String(pyrolysisKI[x]) + "|" + 
-          String(pyrolysisKD[x]) + ","
+          String(pyro_heater_pid[x][0]) + "|" +   // setpoint
+          String(pyro_heater_pid[x][1]) + "|" +          // Kp
+          String(pyro_heater_pid[x][2]) + "|" +          // Ki
+          String(pyro_heater_pid[x][3]) + ","            // Kd
         );
       }
       toServer.remove(toServer.length()-1);
       toServer += '-';
 
-      for(uint8_t x = 0; x < BIO_NUM_DATA; x++) {
+      for(uint8_t x = 0; x < 2; x++) {
         toServer += (
-          String(bioPHSetpoint[x]) + "|" +
-          String(bioPHKP[x]) + "|" +
-          String(bioPHKI[x]) + "|" +
-          String(bioPHKD[x]) + ","
+          String(bio_ph_val[x][1]) + "|" +    // setpoint
+          String(bio_ph_val[x][2]) + "|" +    // Kp
+          String(bio_ph_val[x][3]) + "|" +    // Ki
+          String(bio_ph_val[x][4]) + ","      // Kd
+        );
+      }
+      toServer.remove(toServer.length()-1);
+      toServer += '-';
+      toServer += String(bio_turbidity[0][3]) + "," + String(bio_turbidity[1][3]);
+      toServer += '-';
+
+      for(uint8_t x = 0; x < 2; x++) {
+        toServer += (
+          String(bio_post_heater_pid[x][0]) + "|" +    // setpoint
+          String(bio_post_heater_pid[x][1]) + "|" +    // Kp
+          String(bio_post_heater_pid[x][2]) + "|" +    // Ki
+          String(bio_post_heater_pid[x][3]) + ","      // Kd
         );
       }
       toServer.remove(toServer.length()-1);
       toServer += '-';
       
-      for(uint8_t x = 0; x < BIO_NUM_MOTORS; x++) {
-        toServer += String(bioMotorSetpoint[x]) + ",";
+      for(uint8_t x = 0; x < 10; x++) {
+        toServer += String(bio_motors[x][2]) + ",";   // motor speed
       }
       toServer.remove(toServer.length()-1);
       toServer += '-';
 
-      toServer += String(chemPumpSetpoint) + ",";
-      toServer += String(chemThermoSetpoint) + "|" + String(chemThermoKP) + "|" + String(chemThermoKI) + "|" + String(chemThermoKD);
+      for(uint8_t x = 0; x < 4; x++) {
+        toServer += String(chem_motors[x][2]) + ",";  // motor speed
+      }
+      toServer.remove(toServer.length()-1);
+      toServer += '-';
+
+      for(uint8_t x = 0; x < 2; x++) {
+        toServer += (
+          String(chem_heater_pid[x][0]) + "|" +    // setpoint
+          String(chem_heater_pid[x][1]) + "|" +    // Kp
+          String(chem_heater_pid[x][2]) + "|" +    // Ki
+          String(chem_heater_pid[x][3]) + ","      // Kd
+        );
+      }
+      toServer.remove(toServer.length()-1);
       
       request->send(200, "text/plain", toServer);
     } if(request->url() == "/logging") {
@@ -442,11 +530,11 @@ void setup() {
       Serial.println("estop off");
       digitalWrite(ESTOP, LOW);
     } else if(request->url() == "/delete-pyrolysis") {
-      writeFile(SD, "/pyrolysis-data.csv", "Date and Time,Condenser 1,Condenser 2,Condenser 0,Char Chamber,Dissolution Tank,Valve");
+      writeFile(SD, "/pyrolysis-data.csv", "Date and Time,Dissolution Tank,Dissolution Heating Tape,Valve,Char Chamber,Secondary Reactor,Knockout Drum,Condenser 0,Condenser 1,Condenser 2");
     } else if(request->url() == "/delete-bioreactor") {
-      writeFile(SD, "/bioreactor-data.csv", "Date and Time,Thermocouple 1,pH Sensor 1,Dissolved Oxygen 1,Turbidity 1,Thermocouple 2, pH Sensor 2, Dissolved Oxygen 2,Turbidity 2");
+      writeFile(SD, "/bioreactor-data.csv", "Date and Time,Thermocouple 1,pH Sensor 1,Dissolved Oxygen 1,Turbidity 1,Thermocouple 2, pH Sensor 2, Dissolved Oxygen 2,Turbidity 2,Pasteurization,Dryer");
     } else if(request->url() == "/delete-chemreactor") {
-      writeFile(SD, "/chemreactor-data.csv", "Date and Time,Thermocouple");
+      writeFile(SD, "/chemreactor-data.csv", "Date and Time,Reactor 1,Reactor 2");
     }
   });
 
@@ -474,8 +562,7 @@ bool readRequestedPHDO = false;
 uint8_t loggingCounter = 6;
 void loop() {
   //get slice data from slices
-  if(millis() - lastPOST > 5000) {
-    loggingCounter += 1;
+  if(millis() - lastPOST > SLICE_DATA_INTERVAL_MS) {
     Serial.println("getting data");
     //get time
     String timeToServer = rtc.getTime("%F %T");
@@ -483,62 +570,90 @@ void loop() {
     String bioToServer = timeToServer;
     String chemToServer = timeToServer;
     
-    //Pyrolysis data
-    /*
-    for(uint8_t n = 0; n < PYROLYSIS_NUM_DATA; n++) { //receive data from BREAD (currently random numbers)
-      pyrolysisValue[n] = RLHTRequest;
-    }*/
-    RLHTRequestThermo(RLHT[1].address, &(pyrolysisValue[0]), &(pyrolysisValue[1]));
-    RLHTRequestThermo(RLHT[2].address, &(pyrolysisValue[2]), &(pyrolysisValue[3]));
-    RLHTRequestThermo(RLHT[3].address, &(pyrolysisValue[4]), &(pyrolysisValue[5]));
+    //Heating data
+    for(int i=0;i<9;i++){
+      float temp;
+      if(pyro_thermo[i][1] == 1)
+        RLHTRequestThermo(pyro_thermo[i][0], &(pyro_thermo_val[i]), &(temp));
+      if(pyro_thermo[i][1] == 2)
+        RLHTRequestThermo(pyro_thermo[i][0], &(temp), &(pyro_thermo_val[i]));
+    }
 
     //Bioreactor data
-    for(uint8_t n = 0; n < BIO_NUM_DATA; n++) {
-      if(!(PHDO[n].calPH) && readRequestedPHDO) bioPHData[n] = PHDORequest(PHDO[n].addressPH);
-      if(!(PHDO[n].calDO) && readRequestedPHDO) bioOxygenData[n] = PHDORequest(PHDO[n].addressDO);
-      DCMTRequestTurbidity(DCMT[n+3].address, &(bioTurbidityData[n]));
+
+    for(uint8_t n = 0; n < 2; n++) {
+      if(readRequestedPHDO) bio_ph_val[n][0] = PHDORequest(bio_ph[n][0]);
+      if(readRequestedPHDO) bio_do_val[n] = PHDORequest(bio_do[n]);
+      DCMTRequestTurbidity(bio_turbidity[n][0], &(bio_turbidity_val[0]), &(bio_turbidity_val[1]));
+
+      // update pH pump controller with new pH values if setpoint is nonzero
+      if(bio_ph_val[n][1] != 0)
+        DCMTCommandPH(10 + n, bio_ph_val[n][1], bio_ph_val[n][0]);
+
+      float temp;
+      if(bio_thermo[n][1] == 1)
+        RLHTRequestThermo(bio_thermo[n][0], &(bio_thermo_val[n]), &(temp));
+      if(bio_thermo[n][1] == 2)
+        RLHTRequestThermo(bio_thermo[n][0], &(temp), &(bio_thermo_val[n]));
     }
-    Serial.println(bioTurbidityData[0]);
-    // update pH pump controller with new pH values if setpoint is nonzero
-    if(bioPHSetpoint[0] != 0)
-      DCMTCommandPH(DCMT[1].address, bioPHSetpoint[0], bioPHData[0]); // send pH 1 to DCMT 21
-    if(bioPHSetpoint[1] != 0)
-      DCMTCommandPH(DCMT[2].address, bioPHSetpoint[1], bioPHData[1]); // send pH 2 to DCMT 22
-    
+    for(int i=0;i<2;i++){
+      float temp;
+      if(bio_post_heaters[i][2] == 1)
+        RLHTRequestThermo(bio_post_heaters[i][0], &(bio_thermo_val[i+2]), &(temp));
+      if(bio_post_heaters[i][2] == 2)
+        RLHTRequestThermo(bio_post_heaters[i][0], &(temp), &(bio_thermo_val[i+2]));
+    }
     readRequestedPHDO = false;  // reload new read request
     
-    RLHTRequestThermo(RLHT[0].address, &(bioThermoData[0]), &(bioThermoData[1]));  // get bioreactor temperature data
-
-    float extraThermo;
     //Chemreactor data
-    RLHTRequestThermo(RLHT[5].address, &chemThermoValue, &extraThermo);
+    for(uint8_t n = 0; n < 2; n++) {
+      float temp;
+      if(chem_thermo[n][2] == 1)
+        RLHTRequestThermo(chem_thermo[n][0], &(chem_thermo_val[n]), &(temp));
+      if(chem_thermo[n][2] == 2)
+        RLHTRequestThermo(chem_thermo[n][0], &(temp), &(chem_thermo_val[n]));
+    }
 
     //convert to data to string to save to SD card and send to server
-    for(uint8_t n = 0; n < PYROLYSIS_NUM_DATA; n++) {
-      pyrolysisToServer += "," + String(pyrolysisValue[n]);
+    for(uint8_t n = 0; n < 9; n++) {
+      pyrolysisToServer += "," + String(pyro_thermo_val[n]);
     }
-    for(uint8_t n = 0; n < BIO_NUM_DATA; n++) {
-      bioToServer += "," + String(bioThermoData[n]) + "," + String(bioPHData[n]) + "," + String(bioOxygenData[n] + "," + String(bioTurbidityData[n]);
+    for(uint8_t n = 0; n < 2; n++) {
+      bioToServer += "," + String(bio_thermo_val[n]) + "," + String(bio_ph_val[n][0]) + "," + String(bio_do_val[n]) + "," + String(bio_turbidity_val[n]);
     }
-    chemToServer += "," + String(chemThermoValue);
+    bioToServer += "," + String(bio_thermo_val[2]) + "," + String(bio_thermo_val[3]);
+    for(uint8_t n = 0; n < 2; n++) {
+      chemToServer += "," + String(chem_thermo_val[n]);
+    }
 
     //send data to website
+/*
+Readings to Webpage Format
+Pyrolysis Reactor:
+  Format:  Date and Time,Dissolution Tank,Dissolution Heating Tape,Valve,Char Chamber,Secondary Reactor,Knockout Drum,Condenser 0,Condenser 1,Condenser 2
+  Index:        0       ,       1        ,            2           ,   3 ,     4      ,        5        ,      6      ,     7     ,     8     ,     9    
+Bioreactor:
+  Format:  Date and Time,Thermo1,pH1,DO1,Turb1,Thermo2,pH2,DO2,Turb2,Past,Dry
+  Index:       0        ,   1   , 2 , 3 ,  4  ,   5   , 6 , 7 ,  8  ,  9 , 10
+Chemreactor:
+  Format:  Date and Time,Reactor 1,Reactor 2
+  Index:         0      ,    1    ,    2
+*/
     events.send(pyrolysisToServer.c_str(), "pyrolysis-readings", millis());
     events.send(bioToServer.c_str(), "bioreactor-readings", millis());
     events.send(chemToServer.c_str(), "chemreactor-readings", millis());
     
     //log onto the SD card
-    if(logging && loggingCounter >= 6) {  //append file to SD card after 6 updates
-      loggingCounter = 0;
+    if(logging){
       appendFile(SD, "/pyrolysis-data.csv", "\r\n" + pyrolysisToServer);
       appendFile(SD, "/bioreactor-data.csv", "\r\n" + bioToServer);
       appendFile(SD, "/chemreactor-data.csv", "\r\n" + chemToServer);
     }
     lastPOST = millis();
   }else if(!readRequestedPHDO){
-    for(uint8_t n = 0; n < BIO_NUM_DATA; n++){
-      PHDOCommand(PHDO[n].addressDO, "r");  // request reading from DO sensors
-      PHDOCommand(PHDO[n].addressPH, "r");  // request reading from pH sensors
+    for(uint8_t n = 0; n < 2; n++){
+      PHDOCommand(bio_do[n], "r");  // request reading from DO sensors
+      PHDOCommand(bio_ph[n][0], "r");  // request reading from pH sensors
     }
     readRequestedPHDO = true;
   }
@@ -576,7 +691,7 @@ void RLHTRequestThermo(int address, float* t1, float* t2)
   *t2 = thermo2.number;
 }
 
-void RLHTCommandSetpoint(int address, byte heater, float heatSetpoint)
+void RLHTCommandSetpoint(int address, byte heater, float heatSetpoint, byte thermocouple, bool enableReverse)
 {
   FLOATUNION_t setpoint;
   setpoint.number = heatSetpoint;
@@ -587,12 +702,16 @@ void RLHTCommandSetpoint(int address, byte heater, float heatSetpoint)
   for(int i=0; i<4; i++){
     Wire.write(setpoint.bytes[i]);              // sends one byte
   }
+  Wire.write(thermocouple);
+  Wire.write(enableReverse);
   Wire.endTransmission();    // stop transmitting
 
   Serial.print(address);
   Serial.print('H');
   Serial.print(heater);
-  Serial.println(setpoint.number);
+  Serial.print(setpoint.number);
+  Serial.print(thermocouple);
+  Serial.println(enableReverse);
 }
 
 void RLHTCommandPID(int address, byte heater, float Kp_set, float Ki_set, float Kd_set)
@@ -627,16 +746,17 @@ void RLHTCommandPID(int address, byte heater, float Kp_set, float Ki_set, float 
   Serial.println(Kd.number);
 }
 
-void DCMTRequestTurbidity(int address, float* turb)
+void DCMTRequestTurbidity(int address, float* turbidity1, float* turbidity2)
 {
   bool data_received = false;
   byte in_char;
   char in_data[20];
-  FLOATUNION_t turbidity;
+  FLOATUNION_t turb1, turb2;
 
-  turbidity.number = 0;
+  turb1.number = 0;
+  turb2.number = 0;
   
-  Wire.requestFrom(address, 8, 1);
+  Wire.requestFrom(address, 10, 1);
   int i=0;
   while (Wire.available()) {                 //are there bytes to receive.
     data_received = true;
@@ -646,11 +766,28 @@ void DCMTRequestTurbidity(int address, float* turb)
   }
 
   if(data_received){
-    for(int x=0;x<4;x++)
-      turbidity.bytes[x] = in_data[x];
+    for(int x=0;x<4;x++){
+      turb1.bytes[x] = in_data[x];
+      turb2.bytes[x] = in_data[x+4];
+    }
   }
 
-  *turb = turbidity.number;
+  *turbidity1 = turb1.number;
+  *turbidity2 = turb2.number;
+}
+
+void DCMTCommandTurbidity(int address, byte motor, byte direction, bool enable, int sample_period)
+{
+  INTUNION_t sample_p;
+  sample_p.number = sample_period;
+
+  Wire.beginTransmission(address);
+  Wire.write('T');
+  Wire.write(motor);
+  Wire.write(direction);
+  Wire.write(enable);
+  for(int i=0;i<4;i++) Wire.write(sample_p.bytes[i]);
+  Wire.endTransmission();
 }
 
 void DCMTCommandSpeed(int address, byte motor, int speed_set, bool enable)
@@ -735,17 +872,20 @@ float PHDORequest(int address)
   }
 
   int i=0;
-  while (Wire.available()) {                 //are there bytes to receive.
-    in_char = Wire.read();                   //receive a byte.
-    if(code != 1)                            // check if incoming data is valid
-      in_data[i] = 0;                        // set values to zero if not valid data
-    else
-      in_data[i] = in_char;                    //load this byte into our array.
-    i++;                                  //incur the counter for the array element.
-    if (in_char == 0) {                      //if we see that we have been sent a null command.
-      i = 0;                                 //reset the counter i to 0.
-      break;                                 //exit the while loop.
+  if(code == 1){
+    while (Wire.available()) {                 //are there bytes to receive.
+      in_char = Wire.read();                   //receive a byte.
+      if(code != 1)                            // check if incoming data is valid
+        in_data[i] = 0;                        // set values to zero if not valid data
+      else
+        in_data[i] = in_char;                    //load this byte into our array.
+      i++;                                  //incur the counter for the array element.
+      if (in_char == 0) {                      //if we see that we have been sent a null command.
+        i = 0;                                 //reset the counter i to 0.
+        break;                                 //exit the while loop.
+      }
     }
-  }
-  return atof(in_data);
+    return atof(in_data);
+  }else
+    return 0;
 }
