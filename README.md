@@ -1,4 +1,4 @@
-# BREAD-Local-Software
+# BREAD-Local-Software (Butter)
 
 ## How to install and use:
 1. Load files from the "Website Code on SD Card" folder onto the SD card and mount the card on the ESP32
