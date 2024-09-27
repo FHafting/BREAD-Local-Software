@@ -2,7 +2,7 @@
 #include <FastLED.h>
 #include <PID_v1.h>
 
-#define I2C_ADR 27
+#define I2C_ADR 23
 
 #define ESTOP   2
 #define LED_PIN 5
@@ -24,6 +24,7 @@
 #define MOTOR_MAX_SPEED             255
 #define MOTOR_MIN_SPEED             130
 #define TURBIDITY_PUMP_TIME_MS      10000   // time to cycle new sample through tubes
+#define TURBIDITY_PUMP_TIME_R_MS    10000   // time to reverse cycle sample
 #define TURBIDITY_PUMP_SPEED        60      // speed of turbidity pump (percent)
 #define TURBIDITY_SAMPLE_WAIT_MS    3000    // wait time for bubbles to settle before measurement
 #define TURBIDITY_OFFSET            0       // tap water should be approx. 0 NTU
@@ -45,8 +46,8 @@ union FLOATUNION_t //Define an int that can be broken up and sent via I2C
 };
 
 struct DCMT_t {
-  int m1Speed;   // motor 1 speed (0-255)
-  int m2Speed;   // motor 2 speed (0-255)
+  int m1Speed = 0;   // motor 1 speed (0-255)
+  int m2Speed = 0;   // motor 2 speed (0-255)
   bool m1Dir;  // motor 1 direction (0:backwards, 1:forwards)
   bool m2Dir;  // motor 2 direction (0:backwards, 1:forwards)
   bool m1En;   // motor 1 enable (0:off/apply brake, 1:on/coast)
@@ -63,22 +64,23 @@ struct DCMT_t {
   bool turbPump2 = false;    // for enabling measuring turbitidy from motor 2
   float turbVoltage[2];
   float currentTurbidity[2];
-  int turbSamplePeriod = 10000; // Sampling time is 10s by default
+  uint32_t turbSamplePeriod1 = 10000; // Sampling time is 10s by default
+  uint32_t turbSamplePeriod2 = 10000;
 } DCMT, DCMT_old;
 
 // Acid control activates when pH > Setpoint so control needs to be reversed
-PID acidPID(&(DCMT.currentPH), &(DCMT.m1OnTime), &(DCMT.pHSetpoint), DCMT.Kp_pH, DCMT.Ki_pH, DCMT.Kd_pH, REVERSE);
-PID basePID(&(DCMT.currentPH), &(DCMT.m2OnTime), &(DCMT.pHSetpoint), DCMT.Kp_pH, DCMT.Ki_pH, DCMT.Kd_pH, DIRECT);
+PID basePID(&(DCMT.currentPH), &(DCMT.m1OnTime), &(DCMT.pHSetpoint), DCMT.Kp_pH, DCMT.Ki_pH, DCMT.Kd_pH, DIRECT);
+PID acidPID(&(DCMT.currentPH), &(DCMT.m2OnTime), &(DCMT.pHSetpoint), DCMT.Kp_pH, DCMT.Ki_pH, DCMT.Kd_pH, REVERSE);
 
 // for tracking pulse periods
 unsigned long m1StartTime;
 unsigned long m2StartTime;
 
 long lastSerialPrint = 0;
-long lastTurbiditySample = 0;
-long turbPumpStopTime = 0;
-bool turbidityMeasure = false;  // indicates when to take a sample (after cycle)
-bool turbidityCycle = false;    // indicated when to cycle
+long lastTurbiditySequence1 = 0;
+int turbidityCycle1 = 0;    // turbidity cycle sequence indicator
+long lastTurbiditySequence2 = 0;
+int turbidityCycle2 = 0;    // turbidity cycle sequence indicator
 
 bool E_STOP = false;
 
@@ -133,14 +135,24 @@ void setup() {
   pinMode(ESTOP, INPUT);
   attachInterrupt(digitalPinToInterrupt(ESTOP), estop, CHANGE);
 
+  pinMode(BR1, INPUT_PULLUP);
+  pinMode(BR2, INPUT_PULLUP);
   pinMode(MC1, OUTPUT);
   pinMode(MC2, OUTPUT);
   pinMode(DIR1, OUTPUT);
   pinMode(DIR2, OUTPUT);
-  pinMode(BR1, OUTPUT);
-  pinMode(BR2, OUTPUT);
   pinMode(ENC_B1, INPUT);   // turbidity sense 1
   pinMode(ENC_B2, INPUT);   // turbidity sense 2
+
+  // motor 1
+  digitalWrite(DIR1, HIGH);
+  digitalWrite(MC1, LOW);
+  // motor 2
+  digitalWrite(DIR2, HIGH);
+  digitalWrite(MC2, LOW);
+
+  pinMode(BR1, OUTPUT);
+  pinMode(BR2, OUTPUT);
 
   Wire.begin(I2C_ADR);
   Wire.onReceive(receiveEvent);
@@ -171,20 +183,29 @@ void loop() {
       setPIDTunings();
       if(DCMT.currentPH >= DCMT.pHSetpoint){
         // turn off base pump and prevent basePID from updating
-        DCMT.m2OnTime = 0;
+        DCMT.m1OnTime = 0;
         basePID.SetMode(MANUAL);
         acidPID.SetMode(AUTOMATIC);
         acidPID.Compute();  // acid control when pH > setpoint
       }
       else{
         // turn off acid pump and prevent acidPID from updating
-        DCMT.m1OnTime = 0;
+        DCMT.m2OnTime = 0;
         acidPID.SetMode(MANUAL);
         basePID.SetMode(AUTOMATIC);
         basePID.Compute();   // base control when pH < setpoint
       }
       actuatePumps();
-    }else if(DCMT.turbPump1 || DCMT.turbPump2){   // run as turbidity pump
+    }else if(DCMT.pulsePump && DCMT.pHSetpoint == 0){
+      DCMT.m1Speed = 0;
+      DCMT.m2Speed = 0;   // set motor speeds to 0
+      DCMT.m1OnTime = 0;
+      DCMT.m2OnTime = 0;  // reset PID
+      basePID.SetMode(MANUAL);
+      acidPID.SetMode(MANUAL);
+      actuateMotors();
+    }
+    else if(DCMT.turbPump1 || DCMT.turbPump2){   // run as turbidity pump
       measureTurbidity();
     }else{      // run as continuous motor/pump
       actuateMotors();
@@ -195,38 +216,79 @@ void loop() {
 
 void measureTurbidity()
 {
-  if(millis() - lastTurbiditySample >= DCMT.turbSamplePeriod)    // wait until its time to take a new sample
-  {
-    lastTurbiditySample = millis();
-    if(DCMT.turbPump1)
+  if(DCMT.turbPump1){
+    if(turbidityCycle1 == 0 && millis() - lastTurbiditySequence1 >= (DCMT.turbSamplePeriod1 - TURBIDITY_PUMP_TIME_MS - TURBIDITY_SAMPLE_WAIT_MS - TURBIDITY_PUMP_TIME_R_MS))    // wait until its time to take a new sample
+    {
+      lastTurbiditySequence1 = millis();
+      turbidityCycle1++;
+      DCMT.m1Dir = 1;
       DCMT.m1Speed = TURBIDITY_PUMP_SPEED * 255./100.;
-    if(DCMT.turbPump2)
-      DCMT.m2Speed = TURBIDITY_PUMP_SPEED * 255./100.;
-
-    turbidityCycle = true;
-    Serial.println("Cycling new sample...");
-    actuateMotors();
-  }
-  if(turbidityCycle && (millis() - lastTurbiditySample >= TURBIDITY_PUMP_TIME_MS))    // cycle new sample for some time
-  {
-    turbidityCycle = false;
-    turbidityMeasure = true;
-    turbPumpStopTime = millis();
-    if(DCMT.turbPump1)
+      Serial.println("Cycling new sample for pump 1...");
+      actuateMotors();
+    }
+    if(turbidityCycle1 == 1 && (millis() - lastTurbiditySequence1 >= TURBIDITY_PUMP_TIME_MS))    // cycle new sample for some time
+    {
+      lastTurbiditySequence1 = millis();
+      turbidityCycle1++;
       DCMT.m1Speed = 0;   // stop pump until next sample
-    if(DCMT.turbPump2)
-      DCMT.m2Speed = 0;   // stop pump until next sample
-    actuateMotors();
-  }
-  if(turbidityMeasure && (millis() - turbPumpStopTime >= TURBIDITY_SAMPLE_WAIT_MS)) // wait until bubbles settle and measure
-  {
-    turbidityMeasure = false;
-    if(DCMT.turbPump1)
+      actuateMotors();
+    }
+    if(turbidityCycle1 == 2 && (millis() - lastTurbiditySequence1 >= TURBIDITY_SAMPLE_WAIT_MS)) // wait until bubbles settle and measure
+    {
+      lastTurbiditySequence1 = millis();
+      turbidityCycle1++;
       DCMT.turbVoltage[0] = analogRead(ENC_B1)*5.0/1023;
-    if(DCMT.turbPump2)
-      DCMT.turbVoltage[1] = analogRead(ENC_B2)*5.0/1023;
+      Serial.println("Sample 1 measured!");
 
-    Serial.println("Sample measured!");
+      DCMT.m1Dir = 0;
+      DCMT.m1Speed = TURBIDITY_PUMP_SPEED * 255./100.;
+      actuateMotors();
+      Serial.println("Reversing sample 1...");
+    }
+    if(turbidityCycle1 == 3 && (millis() - lastTurbiditySequence1 >= TURBIDITY_PUMP_TIME_R_MS))    // reverse sample for some time
+    {
+      lastTurbiditySequence1 = millis();
+      turbidityCycle1 = 0;   // back to starting sequence (waiting)
+      DCMT.m1Speed = 0;   // stop pump until next sample
+      actuateMotors();
+    }
+  }
+  if(DCMT.turbPump2){
+    if(turbidityCycle2 == 0 && millis() - lastTurbiditySequence2 >= (DCMT.turbSamplePeriod2 - TURBIDITY_PUMP_TIME_MS - TURBIDITY_SAMPLE_WAIT_MS - TURBIDITY_PUMP_TIME_R_MS))    // wait until its time to take a new sample
+    {
+      lastTurbiditySequence2 = millis();
+      turbidityCycle2++;
+      DCMT.m2Dir = 1;
+      DCMT.m2Speed = TURBIDITY_PUMP_SPEED * 255./100.;
+      Serial.println("Cycling new sample for pump 2...");
+      actuateMotors();
+    }
+    if(turbidityCycle2 == 1 && (millis() - lastTurbiditySequence2 >= TURBIDITY_PUMP_TIME_MS))    // cycle new sample for some time
+    {
+      lastTurbiditySequence2 = millis();
+      turbidityCycle2++;
+      DCMT.m2Speed = 0;   // stop pump until next sample
+      actuateMotors();
+    }
+    if(turbidityCycle2 == 2 && (millis() - lastTurbiditySequence2 >= TURBIDITY_SAMPLE_WAIT_MS)) // wait until bubbles settle and measure
+    {
+      lastTurbiditySequence2 = millis();
+      turbidityCycle2++;
+      DCMT.turbVoltage[1] = analogRead(ENC_B2)*5.0/1023;
+      Serial.println("Sample 2 measured!");
+
+      DCMT.m2Dir = 0;
+      DCMT.m2Speed = TURBIDITY_PUMP_SPEED * 255./100.;
+      actuateMotors();
+      Serial.println("Reversing sample 2...");
+    }
+    if(turbidityCycle2 == 3 && (millis() - lastTurbiditySequence2 >= TURBIDITY_PUMP_TIME_R_MS))    // reverse sample for some time
+    {
+      lastTurbiditySequence2 = millis();
+      turbidityCycle2 = 0;   // back to starting sequence (waiting)
+      DCMT.m2Speed = 0;   // stop pump until next sample
+      actuateMotors();
+    }
   }
 }
 
@@ -288,6 +350,10 @@ void printOutput()
 {
   if(millis() - lastSerialPrint >= SERIAL_UPDATE_TIME_MS)
   {
+    Serial.print(analogRead(ENC_B1));
+    Serial.print(", ");
+    Serial.print(analogRead(ENC_B2));
+    /*
     if(DCMT.pulsePump){
       Serial.print("PID: ");
       Serial.print(DCMT.Kp_pH);
@@ -314,12 +380,17 @@ void printOutput()
       Serial.print("\tDirection: ");
       Serial.print(DCMT.m2Dir);
       if(DCMT.turbPump1 || DCMT.turbPump2){
+        Serial.print("\tSampleTime1: ");
+        Serial.print(DCMT.turbSamplePeriod1);
+        Serial.print("\tSampleTime2: ");
+        Serial.print(DCMT.turbSamplePeriod2);
         Serial.print("\tTurbidity1: ");
         Serial.print(DCMT.turbVoltage[0]);
         Serial.print("\tTurbidity2: ");
         Serial.print(DCMT.turbVoltage[1]);
       }
     }
+    */
     Serial.println();
     lastSerialPrint = millis();
   }
@@ -341,12 +412,12 @@ void actuateMotors()
 void requestEvent() {
   FLOATUNION_t turb1, turb2;
 
-  if(isnan(DCMT.turbVoltage[1]) || !(DCMT.turbPump1))
+  if(isnan(DCMT.turbVoltage[0]) || !(DCMT.turbPump1))
     turb1.number = 0;
   else
     turb1.number = DCMT.turbVoltage[0];
 
-  if(isnan(DCMT.turbVoltage[0]) || !(DCMT.turbPump2))
+  if(isnan(DCMT.turbVoltage[1]) || !(DCMT.turbPump2))
     turb2.number = 0;
   else
     turb2.number = DCMT.turbVoltage[1];
@@ -470,16 +541,17 @@ void setParametersDCMT(char *in_data)
     case 'T':
       DCMT.pulsePump = false;    // disable pulse behavior
 
-      for(int i=0;i<4;i++) int1.bytes[i] = in_data[i+4];
-      DCMT.turbSamplePeriod = int1.number * 1000;    // assign sample period
+      for(int i=0;i<4;i++) int1.bytes[i] = (uint8_t)in_data[i+4];
 
       if(in_data[1] == 1){   // motor 1
+        DCMT.turbSamplePeriod1 = (uint32_t)int1.number * 1000;    // assign sample period
         DCMT.turbPump1 = true;
         DCMT.m1Dir = in_data[2];
         if(!E_STOP)
           DCMT.m1En = in_data[3];
       }
       if(in_data[1] == 2){   // motor 2
+        DCMT.turbSamplePeriod2 = (uint32_t)int1.number * 1000;    // assign sample period
         DCMT.turbPump2 = true;
         DCMT.m2Dir = in_data[2];
         if(!E_STOP)
