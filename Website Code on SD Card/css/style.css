@@ -1,0 +1,72 @@
+/* Set height of body and the document to 100% to enable "full page tabs" */
+body, html {
+    /* height: 100%; */
+    margin: 0;
+    font-family: Arial;
+  }
+  
+  /* Style tab links */
+  .tablink {
+    background-color: #555;
+    color: white;
+    float: left;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    font-size: 17px;
+    width: 25%;
+  }
+  .tabnav {
+    width: 100%;
+    background-color: #777;
+    display: flex;
+  }
+  
+  .tablink:hover {
+    background-color: #777;
+  }
+  
+  /* Style the tab content (and add height:100% for full page content) */
+  .tabcontent {
+    color: black;
+    display: grid;
+    padding: 100px 20px;
+    height: 100%;
+  }
+
+ /* Ensure grid containers have explicit sizes */
+ .grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Set heights to prevent overlap */
+.graph-container, .gauge-container {
+  height: 350px;
+  position: relative;
+}
+
+/* Prevent graph overlap */
+.graph-container {
+  z-index: 1;
+}
+
+/* Ensure gauges are on top */
+.gauge-container {
+  z-index: 2;
+}
+
+/* Tab content visibility */
+.tabcontent {
+  display: none;
+  padding: 20px;
+}
+
+.tabcontent.active {
+  display: block;
+}

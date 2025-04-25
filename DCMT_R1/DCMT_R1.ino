@@ -207,6 +207,7 @@ void loop() {
     }
     else if(DCMT.turbPump1 || DCMT.turbPump2){   // run as turbidity pump
       measureTurbidity();
+      calculateTurbidity();
     }else{      // run as continuous motor/pump
       actuateMotors();
     }
@@ -292,15 +293,20 @@ void measureTurbidity()
   }
 }
 
+//Maybe needs to change to: Output Voltage (V)= -0.0008× (Turbidity of Water (NTU)) + 3.9994
+//Needs testing and calibration with known NTU values
 // need to change once biomass is calibrated
 void calculateTurbidity(){
-  float x;
-  if(DCMT.turbVoltage[1] >= 2.5){
-    x = DCMT.turbVoltage[1];
-  }else{
-    x = 2.5;
+  for(int i = 0; i < 2; i++){
+    float x;
+    if(DCMT.turbVoltage[i] >= 2.5){
+      x = DCMT.turbVoltage[i];
+    }else{
+      x = 2.5;
+    }
+    DCMT.currentTurbidity[i] = (5742.3 - 1120.4*x) * x - 4352.9 - TURBIDITY_OFFSET;
+    //DCMT.currentTurbidity[i] = (x-3.9994)/(-0.0008); //Potential equation replacement
   }
-  DCMT.currentTurbidity[1] = (5742.3 - 1120.4*x) * x - 4352.9 - TURBIDITY_OFFSET;
 }
 
 void setPIDTunings()
@@ -415,12 +421,12 @@ void requestEvent() {
   if(isnan(DCMT.turbVoltage[0]) || !(DCMT.turbPump1))
     turb1.number = 0;
   else
-    turb1.number = DCMT.turbVoltage[0];
+    turb1.number = DCMT.currentTurbidity[0];
 
   if(isnan(DCMT.turbVoltage[1]) || !(DCMT.turbPump2))
     turb2.number = 0;
   else
-    turb2.number = DCMT.turbVoltage[1];
+    turb2.number = DCMT.currentTurbidity[1];
 
   for (int i = 0; i < 4; i++) Wire.write(turb1.bytes[i]);
   for (int i = 0; i < 4; i++) Wire.write(turb2.bytes[i]);

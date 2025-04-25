@@ -20,6 +20,10 @@
 long lastThermoRead = 0;
 long lastSerialPrint = 0;
 
+//Edit these offsets to calibrate thermocouples as needed
+double thermo1_offset = -4.0;
+double thermo2_offset = -4.0;
+
 bool E_STOP = false;
 
 CRGB led;
@@ -224,8 +228,8 @@ void measureThermocouples()
 {
   if(millis() - lastThermoRead >= THERMO_UPDATE_TIME_MS)
   {
-    RLHT.thermo1 = CH1.readCelsius();
-    RLHT.thermo2 = CH2.readCelsius();
+    RLHT.thermo1 = CH1.readCelsius() + thermo1_offset;
+    RLHT.thermo2 = CH2.readCelsius() + thermo2_offset;
     lastThermoRead = millis();
   }
 }
@@ -354,6 +358,17 @@ void setParametersRLHT(char *in_data)
         RLHT.Kp_2 = (double)float1.number;
         RLHT.Ki_2 = (double)float2.number;
         RLHT.Kd_2 = (double)float3.number;
+      }
+      break;
+    case 'O':
+      for(int i=0; i<4; i++) float1.bytes[i] = in_data[i+2];
+      if(in_data[1] == 1)
+      {
+        thermo1_offset = (double)float1.number;
+      }
+      if(in_data[1] == 2)
+      {
+        thermo2_offset = (double)float1.number;
       }
       break;
   }
